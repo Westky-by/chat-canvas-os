@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import * as seed from "@/data/mockData";
 import type {
   Customer, CatalogItem, Conversation, Message, Booking, Inquiry,
