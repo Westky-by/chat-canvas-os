@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppRoutePlannerRouteImport } from './routes/_app.route-planner'
 import { Route as AppInboxRouteImport } from './routes/_app.inbox'
 import { Route as AppCrmRouteImport } from './routes/_app.crm'
 import { Route as AppCampaignsRouteImport } from './routes/_app.campaigns'
+import { Route as ApiPublicSeedOwnerRouteImport } from './routes/api/public/seed-owner'
 import { Route as AppSetupWorkspaceRouteImport } from './routes/_app.setup.workspace'
 import { Route as AppSetupLoginPreviewRouteImport } from './routes/_app.setup.login-preview'
 import { Route as AppSetupInviteRouteImport } from './routes/_app.setup.invite'
@@ -40,6 +42,11 @@ import { Route as AppAdminSecretsRouteImport } from './routes/_app.admin.secrets
 import { Route as AppAdminRolesRouteImport } from './routes/_app.admin.roles'
 import { Route as AppAdminBackupRouteImport } from './routes/_app.admin.backup'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -68,6 +75,11 @@ const AppCampaignsRoute = AppCampaignsRouteImport.update({
   id: '/campaigns',
   path: '/campaigns',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiPublicSeedOwnerRoute = ApiPublicSeedOwnerRouteImport.update({
+  id: '/api/public/seed-owner',
+  path: '/api/public/seed-owner',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppSetupWorkspaceRoute = AppSetupWorkspaceRouteImport.update({
   id: '/setup/workspace',
@@ -193,6 +205,7 @@ const AppAdminBackupRoute = AppAdminBackupRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/auth': typeof AuthRoute
   '/campaigns': typeof AppCampaignsRoute
   '/crm': typeof AppCrmRoute
   '/inbox': typeof AppInboxRoute
@@ -221,8 +234,10 @@ export interface FileRoutesByFullPath {
   '/setup/invite': typeof AppSetupInviteRoute
   '/setup/login-preview': typeof AppSetupLoginPreviewRoute
   '/setup/workspace': typeof AppSetupWorkspaceRoute
+  '/api/public/seed-owner': typeof ApiPublicSeedOwnerRoute
 }
 export interface FileRoutesByTo {
+  '/auth': typeof AuthRoute
   '/campaigns': typeof AppCampaignsRoute
   '/crm': typeof AppCrmRoute
   '/inbox': typeof AppInboxRoute
@@ -252,10 +267,12 @@ export interface FileRoutesByTo {
   '/setup/invite': typeof AppSetupInviteRoute
   '/setup/login-preview': typeof AppSetupLoginPreviewRoute
   '/setup/workspace': typeof AppSetupWorkspaceRoute
+  '/api/public/seed-owner': typeof ApiPublicSeedOwnerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
   '/_app/campaigns': typeof AppCampaignsRoute
   '/_app/crm': typeof AppCrmRoute
   '/_app/inbox': typeof AppInboxRoute
@@ -285,11 +302,13 @@ export interface FileRoutesById {
   '/_app/setup/invite': typeof AppSetupInviteRoute
   '/_app/setup/login-preview': typeof AppSetupLoginPreviewRoute
   '/_app/setup/workspace': typeof AppSetupWorkspaceRoute
+  '/api/public/seed-owner': typeof ApiPublicSeedOwnerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/campaigns'
     | '/crm'
     | '/inbox'
@@ -318,8 +337,10 @@ export interface FileRouteTypes {
     | '/setup/invite'
     | '/setup/login-preview'
     | '/setup/workspace'
+    | '/api/public/seed-owner'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/auth'
     | '/campaigns'
     | '/crm'
     | '/inbox'
@@ -349,9 +370,11 @@ export interface FileRouteTypes {
     | '/setup/invite'
     | '/setup/login-preview'
     | '/setup/workspace'
+    | '/api/public/seed-owner'
   id:
     | '__root__'
     | '/_app'
+    | '/auth'
     | '/_app/campaigns'
     | '/_app/crm'
     | '/_app/inbox'
@@ -381,14 +404,24 @@ export interface FileRouteTypes {
     | '/_app/setup/invite'
     | '/_app/setup/login-preview'
     | '/_app/setup/workspace'
+    | '/api/public/seed-owner'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ApiPublicSeedOwnerRoute: typeof ApiPublicSeedOwnerRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -430,6 +463,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/campaigns'
       preLoaderRoute: typeof AppCampaignsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/public/seed-owner': {
+      id: '/api/public/seed-owner'
+      path: '/api/public/seed-owner'
+      fullPath: '/api/public/seed-owner'
+      preLoaderRoute: typeof ApiPublicSeedOwnerRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/setup/workspace': {
       id: '/_app/setup/workspace'
@@ -670,6 +710,8 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ApiPublicSeedOwnerRoute: ApiPublicSeedOwnerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
