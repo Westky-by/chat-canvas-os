@@ -1,11 +1,34 @@
+import { useMemo, useState, useEffect } from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { MetricCard } from "@/components/common/MetricCard";
 import { ActionButton } from "@/components/common/ActionButton";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { Sparkles, Calendar, DollarSign, Brain, Bell, Play } from "lucide-react";
+import { Modal } from "@/components/common/Modal";
+import { Sparkles, Calendar, DollarSign, Brain, Bell, Play, Plus, Pencil, Trash2 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { fmtTHB } from "@/utils/formatters";
 import { RelativeTime } from "@/components/common/RelativeTime";
+
+type RangeKey = "today" | "7d" | "30d" | "custom";
+type DemoActionType = "customer" | "ai" | "notify" | "booking" | "catalog";
+
+interface DemoStepDef {
+  id: string;
+  text: string;
+  action: DemoActionType;
+  payload: string;
+}
+
+const DEFAULT_STEPS: DemoStepDef[] = [
+  { id: "s1", text: 'ลูกค้าถาม "มีห้องแบบไหนบ้าง"', action: "customer", payload: "มีห้องแบบไหนบ้างคะ" },
+  { id: "s2", text: "AI ส่งรูปห้อง 3 แบบ (Visual Catalog Reply)", action: "ai", payload: "ทางเรามีห้องดีลักซ์ A, สวีท B, สแตนดาร์ด C ค่ะ [ส่งรูป 3 รายการ]" },
+  { id: "s3", text: 'ลูกค้าเลือก "Zone A"', action: "customer", payload: "สนใจ Zone A ค่ะ" },
+  { id: "s4", text: "AI บันทึก preference ของลูกค้า", action: "ai", payload: "บันทึกความสนใจ Zone A เรียบร้อยค่ะ" },
+  { id: "s5", text: "AI แจ้งเจ้าของผ่าน LINE/Telegram", action: "notify", payload: "🛏️ ลูกค้าสนใจห้องดีลักซ์ Zone A ตอบกลับด่วน" },
+  { id: "s6", text: "Admin สร้างการจอง", action: "booking", payload: "ห้องดีลักซ์ Zone A|2500" },
+];
+
+const STORAGE_KEY = "dashboard.demoSteps.v1";
 
 export function DashboardPage() {
   const inquiries = useAppStore((s) => s.inquiries);
@@ -18,106 +41,190 @@ export function DashboardPage() {
   const addMessage = useAppStore((s) => s.addMessage);
   const conv = useAppStore((s) => s.conversations[0]);
 
-  // ===== Real metrics (computed from actual store data) =====
-  const now = Date.now();
-  const DAY = 86_400_000;
-  const WEEK = 7 * DAY;
-  const inDay = (iso: string, offset = 0) => {
-    const t = new Date(iso).getTime();
-    return t >= now - (offset + 1) * DAY && t < now - offset * DAY;
-  };
-  const inWeek = (iso: string, offset = 0) => {
-    const t = new Date(iso).getTime();
-    return t >= now - (offset + 1) * WEEK && t < now - offset * WEEK;
-  };
-  const pct = (cur: number, prev: number) => {
-    if (prev === 0) return cur === 0 ? 0 : 100;
-    return ((cur - prev) / prev) * 100;
-  };
-  const fmtDelta = (p: number, suffix: string) =>
-    `${p >= 0 ? "+" : ""}${p.toFixed(1)}% ${suffix}`;
+  // ===== Date range =====
+  const [range, setRange] = useState<RangeKey>("today");
+  const [fromDate, setFromDate] = useState<string>(() => new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10));
+  const [toDate, setToDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
-  const inqToday = inquiries.filter((i) => inDay(i.createdAt, 0)).length;
-  const inqYday = inquiries.filter((i) => inDay(i.createdAt, 1)).length;
-  const inqDelta = pct(inqToday, inqYday);
+  const { startMs, endMs, prevStartMs, prevEndMs, rangeLabel } = useMemo(() => {
+    const end = new Date(); end.setHours(23, 59, 59, 999);
+    let start = new Date(); start.setHours(0, 0, 0, 0);
+    let label = "วันนี้";
+    if (range === "7d") { start = new Date(Date.now() - 6 * 86400000); start.setHours(0,0,0,0); label = "7 วันล่าสุด"; }
+    else if (range === "30d") { start = new Date(Date.now() - 29 * 86400000); start.setHours(0,0,0,0); label = "30 วันล่าสุด"; }
+    else if (range === "custom") {
+      start = new Date(fromDate + "T00:00:00");
+      end.setTime(new Date(toDate + "T23:59:59").getTime());
+      label = `${fromDate} → ${toDate}`;
+    }
+    const span = end.getTime() - start.getTime();
+    return {
+      startMs: start.getTime(),
+      endMs: end.getTime(),
+      prevStartMs: start.getTime() - span - 1,
+      prevEndMs: start.getTime() - 1,
+      rangeLabel: label,
+    };
+  }, [range, fromDate, toDate]);
+
+  const inRange = (iso: string, s = startMs, e = endMs) => {
+    const t = new Date(iso).getTime();
+    return t >= s && t <= e;
+  };
+  const pct = (cur: number, prev: number) => prev === 0 ? (cur === 0 ? 0 : 100) : ((cur - prev) / prev) * 100;
+  const fmtDelta = (p: number, suffix: string) => `${p >= 0 ? "+" : ""}${p.toFixed(1)}% ${suffix}`;
+
+  const inqCur = inquiries.filter((i) => inRange(i.createdAt)).length;
+  const inqPrev = inquiries.filter((i) => inRange(i.createdAt, prevStartMs, prevEndMs)).length;
+  const inqDelta = pct(inqCur, inqPrev);
 
   const paidOrders = orders.filter((o) => o.paymentStatus === "paid");
-  const revenue = paidOrders.reduce((a, b) => a + b.amount, 0);
-  const revThisWeek = paidOrders.filter((o) => inWeek(o.createdAt, 0)).reduce((a, b) => a + b.amount, 0);
-  const revLastWeek = paidOrders.filter((o) => inWeek(o.createdAt, 1)).reduce((a, b) => a + b.amount, 0);
-  const revDelta = pct(revThisWeek, revLastWeek);
+  const revCur = paidOrders.filter((o) => inRange(o.createdAt)).reduce((a, b) => a + b.amount, 0);
+  const revPrev = paidOrders.filter((o) => inRange(o.createdAt, prevStartMs, prevEndMs)).reduce((a, b) => a + b.amount, 0);
+  const revDelta = pct(revCur, revPrev);
 
   const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+  const bookingsInRange = bookings.filter((b) => inRange(b.date || new Date().toISOString())).length;
 
-  // AI Accuracy = ค่าเฉลี่ย confidence จาก feedback ที่ผ่านการตรวจสอบ
-  const scored = aiFeedback.filter((f) => f.status === "correct" || f.status === "wrong");
-  const avgConfidence = scored.length
-    ? (scored.reduce((a, f) => a + f.confidence, 0) / scored.length) * 100
-    : 0;
-  const correctRate = scored.length
-    ? (scored.filter((f) => f.status === "correct").length / scored.length) * 100
-    : 0;
+  const scoped = aiFeedback.filter((f) => inRange(f.createdAt));
+  const scored = scoped.filter((f) => f.status === "correct" || f.status === "wrong");
+  const avgConfidence = scored.length ? (scored.reduce((a, f) => a + f.confidence, 0) / scored.length) * 100 : 0;
+  const correctRate = scored.length ? (scored.filter((f) => f.status === "correct").length / scored.length) * 100 : 0;
+
+  // ===== Demo Flow (editable, persisted) =====
+  const [steps, setSteps] = useState<DemoStepDef[]>(DEFAULT_STEPS);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setSteps(JSON.parse(raw));
+    } catch { /* noop */ }
+  }, []);
+  const saveSteps = (next: DemoStepDef[]) => {
+    setSteps(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* noop */ }
+  };
+
+  const [editing, setEditing] = useState<DemoStepDef | null>(null);
+  const [openEditor, setOpenEditor] = useState(false);
+
+  const runStep = (st: DemoStepDef) => {
+    switch (st.action) {
+      case "customer": conv && addMessage(conv.id, st.payload, "customer"); break;
+      case "ai": conv && addMessage(conv.id, st.payload, "ai"); break;
+      case "notify": notifyOwner("Demo Flow", st.payload); break;
+      case "booking": {
+        const [resource, priceStr] = st.payload.split("|");
+        useAppStore.getState().addBooking({ resource: resource || "ห้องตัวอย่าง", price: Number(priceStr) || 0 });
+        break;
+      }
+      case "catalog": {
+        const [title, priceStr, kw] = st.payload.split("|");
+        addCatalog({ title: title || "Demo Item", price: Number(priceStr) || 0, cfKeyword: kw || "DEMO" });
+        break;
+      }
+    }
+  };
+
+  const openNew = () => { setEditing({ id: `s${Date.now()}`, text: "", action: "customer", payload: "" }); setOpenEditor(true); };
+  const openEdit = (st: DemoStepDef) => { setEditing({ ...st }); setOpenEditor(true); };
+  const saveEditor = () => {
+    if (!editing) return;
+    const exists = steps.find((x) => x.id === editing.id);
+    saveSteps(exists ? steps.map((x) => x.id === editing.id ? editing : x) : [...steps, editing]);
+    setOpenEditor(false); setEditing(null);
+  };
+  const removeStep = (id: string) => saveSteps(steps.filter((x) => x.id !== id));
 
   return (
     <PageContainer
       title="ภาพรวมระบบ (Dashboard)"
       description="สรุปการทำงาน AI, การจอง, ยอดขาย และการแจ้งเตือนเจ้าของแบบเรียลไทม์"
     >
+      {/* Date range bar */}
+      <div className="bg-surface border border-border rounded-xl p-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground mr-2">ช่วงเวลา:</span>
+        {([
+          { k: "today", l: "วันนี้" },
+          { k: "7d", l: "7 วัน" },
+          { k: "30d", l: "30 วัน" },
+          { k: "custom", l: "กำหนดเอง" },
+        ] as { k: RangeKey; l: string }[]).map((opt) => (
+          <button
+            key={opt.k}
+            onClick={() => setRange(opt.k)}
+            className={`px-3 py-1.5 rounded-md text-xs border transition ${range === opt.k ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"}`}
+          >
+            {opt.l}
+          </button>
+        ))}
+        {range === "custom" && (
+          <div className="flex items-center gap-2 ml-2">
+            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-background border border-border rounded-md px-2 py-1 text-xs" />
+            <span className="text-xs text-muted-foreground">ถึง</span>
+            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="bg-background border border-border rounded-md px-2 py-1 text-xs" />
+          </div>
+        )}
+        <span className="ml-auto text-[11px] text-muted-foreground">แสดงผล: {rangeLabel}</span>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          label="AI Inquiries วันนี้"
-          value={inqToday}
-          hint={`เมื่อวาน ${inqYday} รายการ`}
+          label="AI Inquiries"
+          value={inqCur}
+          hint={`ช่วงก่อนหน้า ${inqPrev} รายการ`}
           icon={<Sparkles className="w-4 h-4" />}
-          trend={inquiries.length ? { value: fmtDelta(inqDelta, "เทียบเมื่อวาน"), positive: inqDelta >= 0 } : undefined}
+          trend={inquiries.length ? { value: fmtDelta(inqDelta, "vs ช่วงก่อน"), positive: inqDelta >= 0 } : undefined}
         />
         <MetricCard
-          label="การจองที่รอ"
-          value={pendingBookings}
-          hint={`จากทั้งหมด ${bookings.length} รายการ`}
+          label="การจอง (ในช่วง)"
+          value={bookingsInRange}
+          hint={`รอยืนยัน ${pendingBookings} • รวมทั้งหมด ${bookings.length}`}
           icon={<Calendar className="w-4 h-4" />}
         />
         <MetricCard
-          label="ยอดขายรวม"
-          value={fmtTHB(revenue)}
-          hint={`สัปดาห์นี้ ${fmtTHB(revThisWeek)}`}
+          label="ยอดขาย (ในช่วง)"
+          value={fmtTHB(revCur)}
+          hint={`ช่วงก่อนหน้า ${fmtTHB(revPrev)}`}
           icon={<DollarSign className="w-4 h-4" />}
-          trend={paidOrders.length ? { value: fmtDelta(revDelta, "week-on-week"), positive: revDelta >= 0 } : undefined}
+          trend={paidOrders.length ? { value: fmtDelta(revDelta, "vs ช่วงก่อน"), positive: revDelta >= 0 } : undefined}
         />
         <MetricCard
           label="AI Accuracy"
           value={scored.length ? `${correctRate.toFixed(1)}%` : "—"}
-          hint={scored.length ? `confidence เฉลี่ย ${avgConfidence.toFixed(1)}% จาก ${scored.length} ฟีดแบ็ก` : "ยังไม่มีฟีดแบ็ก"}
+          hint={scored.length ? `confidence เฉลี่ย ${avgConfidence.toFixed(1)}% • ${scored.length} ฟีดแบ็ก` : "ยังไม่มีฟีดแบ็กในช่วงนี้"}
           icon={<Brain className="w-4 h-4" />}
         />
       </div>
-
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-sm">Demo Flow แบบครบวงจร</h3>
-              <p className="text-xs text-muted-foreground mt-1">รันสถานการณ์จำลองเพื่อดูระบบทำงานข้ามหน้า</p>
+              <p className="text-xs text-muted-foreground mt-1">รันสถานการณ์จำลอง — แก้ไข/เพิ่ม/ลบขั้นตอนได้</p>
             </div>
-            <StatusBadge label="Mock Mode" variant="primary" />
+            <div className="flex items-center gap-2">
+              <StatusBadge label="Editable" variant="primary" />
+              <ActionButton size="sm" variant="primary" icon={<Plus className="w-3 h-3" />} onClick={openNew}>เพิ่มขั้นตอน</ActionButton>
+            </div>
           </div>
           <div className="space-y-2">
-            <DemoStep
-              n={1}
-              text='ลูกค้าถาม "มีห้องแบบไหนบ้าง"'
-              onRun={() => conv && addMessage(conv.id, "มีห้องแบบไหนบ้างคะ", "customer")}
-            />
-            <DemoStep n={2} text="AI ส่งรูปห้อง 3 แบบ (Visual Catalog Reply)" onRun={() => conv && addMessage(conv.id, "ทางเรามีห้องดีลักซ์ A, สวีท B, สแตนดาร์ด C ค่ะ [ส่งรูป 3 รายการ]", "ai")} />
-            <DemoStep n={3} text='ลูกค้าเลือก "Zone A"' onRun={() => conv && addMessage(conv.id, "สนใจ Zone A ค่ะ", "customer")} />
-            <DemoStep n={4} text="AI บันทึก preference ของลูกค้า" onRun={() => conv && addMessage(conv.id, "บันทึกความสนใจ Zone A เรียบร้อยค่ะ", "ai")} />
-            <DemoStep n={5} text="AI แจ้งเจ้าของผ่าน LINE/Telegram" onRun={() => notifyOwner("ลูกค้าเลือก Zone A", "🛏️ ลูกค้าสนใจห้องดีลักซ์ Zone A ตอบกลับด่วน")} />
-            <DemoStep n={6} text="Admin สร้างการจอง" onRun={() => useAppStore.getState().addBooking({ resource: "ห้องดีลักซ์ Zone A", price: 2500 })} />
-            <div className="mt-3 pt-3 border-t border-border">
-              <ActionButton variant="primary" icon={<Play className="w-3 h-3" />} onClick={() => addCatalog({ title: "Pool Suite Demo", price: 5500, cfKeyword: "DEMO" })}>
-                ทดสอบ Copilot เพิ่มห้องอัตโนมัติ
-              </ActionButton>
-            </div>
+            {steps.map((st, idx) => (
+              <div key={st.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border">
+                <div className="w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center">{idx + 1}</div>
+                <div className="flex-1 text-xs">
+                  <div>{st.text || <span className="text-muted-foreground italic">(ไม่มีคำอธิบาย)</span>}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">action: {st.action}</div>
+                </div>
+                <ActionButton size="sm" variant="primary" onClick={() => runStep(st)} icon={<Play className="w-3 h-3" />}>รัน</ActionButton>
+                <button onClick={() => openEdit(st)} className="p-1.5 rounded hover:bg-muted text-muted-foreground" title="แก้ไข"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => removeStep(st.id)} className="p-1.5 rounded hover:bg-destructive/15 text-destructive" title="ลบ"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+            ))}
+            {steps.length === 0 && (
+              <div className="text-xs text-muted-foreground text-center py-6">ยังไม่มีขั้นตอน — กด "เพิ่มขั้นตอน"</div>
+            )}
           </div>
         </div>
 
@@ -131,23 +238,43 @@ export function DashboardPage() {
                 <div className="text-xs">{n.message}</div>
                 <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
                   <StatusBadge label={n.channel} variant="info" />
-                  {<RelativeTime iso={n.at} />}
+                  <RelativeTime iso={n.at} />
                 </div>
               </div>
             ))}
+            {notif.length === 0 && <div className="text-xs text-muted-foreground">ยังไม่มีแจ้งเตือน</div>}
           </div>
         </div>
       </div>
-    </PageContainer>
-  );
-}
 
-function DemoStep({ n, text, onRun }: { n: number; text: string; onRun: () => void }) {
-  return (
-    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-background border border-border">
-      <div className="w-6 h-6 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center">{n}</div>
-      <div className="flex-1 text-xs">{text}</div>
-      <ActionButton size="sm" variant="primary" onClick={onRun} icon={<Play className="w-3 h-3" />}>รัน</ActionButton>
-    </div>
+      <Modal open={openEditor} onClose={() => { setOpenEditor(false); setEditing(null); }} title={editing && steps.find(x => x.id === editing.id) ? "แก้ไขขั้นตอน" : "เพิ่มขั้นตอน"}>
+        {editing && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground">คำอธิบาย</label>
+              <input className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm mt-1" value={editing.text} onChange={(e) => setEditing({ ...editing, text: e.target.value })} placeholder='เช่น ลูกค้าถาม "มีห้องแบบไหนบ้าง"' />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">ประเภท Action</label>
+              <select className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm mt-1" value={editing.action} onChange={(e) => setEditing({ ...editing, action: e.target.value as DemoActionType })}>
+                <option value="customer">customer — ส่งข้อความจากลูกค้า</option>
+                <option value="ai">ai — ส่งข้อความจาก AI</option>
+                <option value="notify">notify — แจ้งเตือนเจ้าของ</option>
+                <option value="booking">booking — สร้างการจอง (รูปแบบ: ชื่อ|ราคา)</option>
+                <option value="catalog">catalog — เพิ่มแคตาล็อก (รูปแบบ: ชื่อ|ราคา|CFKW)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">ข้อมูล / ข้อความ</label>
+              <textarea rows={3} className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm mt-1" value={editing.payload} onChange={(e) => setEditing({ ...editing, payload: e.target.value })} />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <ActionButton variant="ghost" onClick={() => { setOpenEditor(false); setEditing(null); }}>ยกเลิก</ActionButton>
+              <ActionButton variant="primary" onClick={saveEditor}>บันทึก</ActionButton>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </PageContainer>
   );
 }
