@@ -31,7 +31,7 @@ export function BookingManagerPage() {
             size="sm"
             variant="primary"
             icon={<Check className="w-3 h-3" />}
-            onClick={() => confirm(r.id)}
+            onClick={() => confirmBooking(r.id)}
             disabled={r.status === "confirmed"}
           >
             ยืนยัน
