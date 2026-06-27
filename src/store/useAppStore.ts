@@ -437,6 +437,14 @@ export const useAppStore = create<AppState>()(
     }));
   },
 
+  setConversationMode: (id, mode) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) => (c.id === id ? { ...c, mode } : c)),
+    }));
+    get().audit("Conversation Mode", `${id} → ${mode === "ai" ? "AI ตอบอัตโนมัติ" : "Admin ครอบครอง"}`);
+    toast.success(mode === "ai" ? "เปิด AI ตอบอัตโนมัติแล้ว" : "ปิด AI — Admin ครอบครอง");
+  },
+
   sendCustomerMessageDemo: (text) => {
     const conv = get().conversations[0];
     if (!conv) return;
