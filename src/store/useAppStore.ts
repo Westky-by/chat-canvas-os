@@ -103,7 +103,20 @@ interface AppState {
   deleteNotificationRule: (id: string) => void;
   resetAll: () => void;
 
+  // Catalog CRUD
+  addCatalogItem: (item: Partial<CatalogItem>) => void;
+  updateCatalogItem: (id: string, patch: Partial<CatalogItem>) => void;
+  deleteCatalogItem: (id: string) => void;
+
+  // Product CRUD
+  addProduct: (p: Partial<Product>) => void;
+  updateProduct: (id: string, patch: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
+
+  // Customer note
+  updateCustomerNote: (id: string, note: string) => void;
 }
+
 
 const mask = (raw: string) => (raw.length <= 4 ? "••••" : `•••• ${raw.slice(-4)}`);
 
@@ -614,7 +627,89 @@ export const useAppStore = create<AppState>()(
     }));
     toast.success("ล้างข้อมูลทั้งหมดเรียบร้อย — เริ่มต้นจาก 0");
   },
+
+  addCatalogItem: (item) => {
+    const id = nid("K");
+    set((s) => ({
+      catalog: [
+        {
+          id,
+          title: item.title ?? "รายการใหม่",
+          price: item.price ?? 0,
+          cfKeyword: item.cfKeyword ?? "NEW1",
+          stock: item.stock ?? 1,
+          description: item.description ?? "",
+          image: item.image ?? "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400",
+          aiUsable: item.aiUsable ?? true,
+        },
+        ...s.catalog,
+      ],
+    }));
+    get().audit("add_catalog", id);
+    toast.success("เพิ่มรายการใน Catalog แล้ว");
+  },
+  updateCatalogItem: (id, patch) => {
+    set((s) => ({ catalog: s.catalog.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+    get().audit("update_catalog", id);
+    toast.success("บันทึก Catalog แล้ว");
+  },
+  deleteCatalogItem: (id) => {
+    set((s) => ({ catalog: s.catalog.filter((c) => c.id !== id) }));
+    get().audit("delete_catalog", id);
+    toast.warning("ลบรายการแล้ว");
+  },
+
+  addProduct: (p) => {
+    const id = nid("P");
+    const stock = p.stock ?? 0;
+    set((s) => ({
+      products: [
+        {
+          id,
+          name: p.name ?? "สินค้าใหม่",
+          sku: p.sku ?? id,
+          price: p.price ?? 0,
+          stock,
+          status: stock === 0 ? "out" : stock < 3 ? "low" : "available",
+          catalogId: p.catalogId,
+          cfKeyword: p.cfKeyword,
+          image: p.image,
+          description: p.description ?? "",
+          updatedAt: now(),
+        },
+        ...s.products,
+      ],
+    }));
+    get().audit("add_product", id);
+    toast.success("เพิ่มสินค้าแล้ว");
+  },
+  updateProduct: (id, patch) => {
+    set((s) => ({
+      products: s.products.map((p) => {
+        if (p.id !== id) return p;
+        const next = { ...p, ...patch, updatedAt: now() };
+        if (patch.stock !== undefined) {
+          next.status = patch.stock === 0 ? "out" : patch.stock < 3 ? "low" : "available";
+        }
+        return next;
+      }),
+    }));
+    get().audit("update_product", id);
+    toast.success("บันทึกสินค้าแล้ว");
+  },
+  deleteProduct: (id) => {
+    set((s) => ({ products: s.products.filter((p) => p.id !== id) }));
+    get().audit("delete_product", id);
+    toast.warning("ลบสินค้าแล้ว");
+  },
+
+  updateCustomerNote: (id, note) => {
+    set((s) => ({ customers: s.customers.map((c) => (c.id === id ? { ...c, note } : c)) }));
+    get().audit("update_customer_note", id);
+    toast.success("บันทึกโน้ตลูกค้าแล้ว");
+  },
     }),
+
     {
       name: "app-os-settings-v1",
       storage: createJSONStorage(() => localStorage),

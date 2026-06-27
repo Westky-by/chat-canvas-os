@@ -19,7 +19,9 @@ export interface Customer {
   tier: "VIP" | "Regular" | "New";
   tags: string[];
   lastActivity: string;
+  note?: string;
 }
+
 
 export interface CatalogItem {
   id: ID;
@@ -131,8 +133,11 @@ export interface Product {
   status: "available" | "low" | "out" | "unavailable";
   catalogId?: ID;
   cfKeyword?: string;
+  image?: string;
+  description?: string;
   updatedAt: string;
 }
+
 
 export interface Order {
   id: ID;

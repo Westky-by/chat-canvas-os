@@ -3,14 +3,14 @@ import { DataTable, type Column } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { AlertTriangle, Plus } from "lucide-react";
+import { AlertTriangle, Plus, Check, CalendarSearch, CalendarClock, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Booking } from "@/types";
 
 export function BookingManagerPage() {
   const bookings = useAppStore((s) => s.bookings);
   const customers = useAppStore((s) => s.customers);
-  const confirm = useAppStore((s) => s.confirmBooking);
+  const confirmBooking = useAppStore((s) => s.confirmBooking);
   const cancel = useAppStore((s) => s.cancelBooking);
   const add = useAppStore((s) => s.addBooking);
 
@@ -24,13 +24,33 @@ export function BookingManagerPage() {
     { key: "related", header: "เกี่ยวข้อง", render: (r) => r.relatedInquiryId ?? "—" },
     {
       key: "actions",
-      header: "Actions",
+      header: "การจัดการ",
       render: (r) => (
-        <div className="flex gap-1">
-          {r.status !== "confirmed" && <ActionButton size="sm" variant="primary" onClick={() => confirm(r.id)}>ยืนยัน</ActionButton>}
-          <ActionButton size="sm" variant="ghost" onClick={() => toast.info("เปิดเช็คสล็อตว่าง (mock)")}>เช็คคิว</ActionButton>
-          <ActionButton size="sm" variant="ghost" onClick={() => toast.success("เลื่อนเวลาแล้ว (mock)")}>เลื่อน</ActionButton>
-          <ActionButton size="sm" variant="danger" onClick={() => cancel(r.id)}>ยกเลิก</ActionButton>
+        <div className="flex flex-wrap gap-1.5">
+          <ActionButton
+            size="sm"
+            variant="primary"
+            icon={<Check className="w-3 h-3" />}
+            onClick={() => confirmBooking(r.id)}
+            disabled={r.status === "confirmed"}
+          >
+            ยืนยัน
+          </ActionButton>
+          <ActionButton size="sm" variant="secondary" icon={<CalendarSearch className="w-3 h-3" />} onClick={() => toast.info("เช็คสล็อตว่าง (mock)")}>
+            เช็คคิว
+          </ActionButton>
+          <ActionButton size="sm" variant="secondary" icon={<CalendarClock className="w-3 h-3" />} onClick={() => toast.success("เลื่อนเวลาแล้ว (mock)")}>
+            เลื่อน
+          </ActionButton>
+          <ActionButton
+            size="sm"
+            variant="danger"
+            icon={<X className="w-3 h-3" />}
+            onClick={() => { if (confirm(`ยกเลิกการจอง ${r.id}?`)) cancel(r.id); }}
+            disabled={r.status === "cancelled"}
+          >
+            ยกเลิก
+          </ActionButton>
         </div>
       ),
     },
