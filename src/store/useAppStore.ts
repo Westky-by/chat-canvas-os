@@ -543,4 +543,38 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().audit("delete_notification_rule", id);
     toast.warning("ลบกฎแล้ว");
   },
+
+  resetAll: () => {
+    set({
+      customers: [...seed.customers],
+      catalog: [...seed.catalog],
+      conversations: [...seed.conversations],
+      messages: [...seed.messages],
+      bookings: [...seed.bookings],
+      inquiries: [...seed.inquiries],
+      customerPreferences: [...seed.customerPreferences],
+      uploadedKnowledgeFiles: [...seed.uploadedKnowledgeFiles],
+      aiFeedback: [...seed.aiFeedback],
+      campaigns: [...seed.campaigns],
+      products: [...seed.products],
+      orders: [...seed.orders],
+      paymentSlips: [...seed.paymentSlips],
+      routes: [...seed.routes],
+      aiProviders: [...seed.aiProviders],
+      chatIntegrations: [...seed.chatIntegrations],
+      webhookTestLogs: [...seed.webhookTestLogs],
+      notificationRules: [...seed.notificationRules],
+      roles: [...seed.roles],
+      users: [...seed.users],
+      auditLogs: [...seed.auditLogs],
+      usageLogs: [...seed.usageLogs],
+      errorLogs: [...seed.errorLogs],
+      backupJobs: [...seed.backupJobs],
+      securitySettings: { ...seed.securitySettings },
+      ownerNotificationLogs: [...seed.ownerNotificationLogs],
+      copilotMessages: [...seed.copilotMessages],
+    });
+    toast.success("รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นแล้ว");
+  },
 }));
+
