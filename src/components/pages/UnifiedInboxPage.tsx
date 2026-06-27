@@ -190,6 +190,13 @@ export function UnifiedInboxPage() {
             placeholder="พิมพ์ตอบกลับ..."
             className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           />
+          <ActionButton
+            icon={aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            onClick={generateAIReply}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "AI..." : "ให้ AI ตอบ"}
+          </ActionButton>
           <ActionButton variant="primary" icon={<Send className="w-3.5 h-3.5" />} onClick={send}>ส่ง</ActionButton>
         </div>
       </section>
