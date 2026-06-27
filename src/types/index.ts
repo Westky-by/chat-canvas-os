@@ -133,8 +133,11 @@ export interface Product {
   status: "available" | "low" | "out" | "unavailable";
   catalogId?: ID;
   cfKeyword?: string;
+  image?: string;
+  description?: string;
   updatedAt: string;
 }
+
 
 export interface Order {
   id: ID;
