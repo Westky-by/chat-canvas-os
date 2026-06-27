@@ -38,20 +38,13 @@ const toChannel = (raw: string): Channel => {
 const shortExternalId = (id: string) => (id.length > 10 ? `…${id.slice(-8)}` : id);
 
 export function UnifiedInboxPage() {
-  const storedConversations = useAppStore((s) => s.conversations);
-  const storedMessages = useAppStore((s) => s.messages);
-  const storedCustomers = useAppStore((s) => s.customers);
   const catalog = useAppStore((s) => s.catalog);
-  const prefs = useAppStore((s) => s.customerPreferences);
-  const inquiries = useAppStore((s) => s.inquiries);
-  const addMessage = useAppStore((s) => s.addMessage);
-  const setConversationMode = useAppStore((s) => s.setConversationMode);
 
   const [liveRows, setLiveRows] = useState<InboxRow[]>([]);
   const [liveModes, setLiveModes] = useState<Record<string, Conversation["mode"]>>({});
   const [liveLoading, setLiveLoading] = useState(true);
   const [liveError, setLiveError] = useState("");
-  const [activeId, setActiveId] = useState(storedConversations[0]?.id ?? "");
+  const [activeId, setActiveId] = useState("");
   const [text, setText] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -144,10 +137,12 @@ export function UnifiedInboxPage() {
       }
 
       const bucket = grouped.get(key)!;
+      const currentName = bucket.customer.name;
+      if (row.user_name?.trim() && currentName.includes("…")) bucket.customer.name = row.user_name.trim();
       bucket.customer.lastActivity = at;
       bucket.conversation.lastMessage = row.text;
       bucket.conversation.updatedAt = at;
-      bucket.conversation.unread += 1;
+      if (sender === "customer") bucket.conversation.unread += 1;
       bucket.messages.push({
         id: `live-message:${row.id}`,
         conversationId,
@@ -198,17 +193,11 @@ export function UnifiedInboxPage() {
   const activeConv = conversations.find((c) => c.id === activeId);
   const activeCust = customers.find((c) => c.id === activeConv?.customerId);
   const thread = messages.filter((m) => m.conversationId === activeId);
-  const pref = prefs.find((p) => p.customerId === activeConv?.customerId);
-  const linkedInq = inquiries.find((i) => i.customerId === activeConv?.customerId);
   const toggleActiveMode = () => {
     if (!activeConv) return;
     const next = activeConv.mode === "ai" ? "admin" : "ai";
-    if (activeConv.id.startsWith("conversation:live:")) {
-      setLiveModes((modes) => ({ ...modes, [activeConv.id]: next }));
-      toast.success(next === "ai" ? "เปิด AI ตอบอัตโนมัติแล้ว" : "ปิด AI — Admin ครอบครอง");
-      return;
-    }
-    setConversationMode(activeConv.id, next);
+    setLiveModes((modes) => ({ ...modes, [activeConv.id]: next }));
+    toast.success(next === "ai" ? "เปิด AI ตอบอัตโนมัติแล้ว" : "ปิด AI — Admin ครอบครอง");
   };
 
   const send = async () => {
@@ -216,20 +205,16 @@ export function UnifiedInboxPage() {
     const messageText = text;
     setText("");
     try {
-      if (activeConv.id.startsWith("conversation:live:")) {
-        await sendInboxMessage({
-          data: {
-            channel: activeConv.channel,
-            externalUserId: activeCust.phone ?? "",
-            userName: activeCust.name,
-            text: messageText,
-            sender: "admin",
-          },
-        });
-        toast.success("ส่งข้อความแล้ว");
-        return;
-      }
-      addMessage(activeId, messageText);
+      await sendInboxMessage({
+        data: {
+          channel: activeConv.channel,
+          externalUserId: activeCust.phone ?? "",
+          userName: activeCust.name,
+          text: messageText,
+          sender: "admin",
+        },
+      });
+      toast.success("ส่งข้อความแล้ว");
     } catch (e) {
       setText(messageText);
       toast.error(e instanceof Error ? e.message : "ส่งข้อความไม่สำเร็จ");
@@ -259,7 +244,7 @@ export function UnifiedInboxPage() {
         },
       });
       const answer = res.text || "(ไม่มีคำตอบ)";
-      if (activeConv?.id.startsWith("conversation:live:") && activeCust?.phone) {
+      if (activeConv && activeCust?.phone) {
         await sendInboxMessage({
           data: {
             channel: activeConv.channel,
@@ -269,8 +254,6 @@ export function UnifiedInboxPage() {
             sender: "ai",
           },
         });
-      } else {
-        addMessage(activeId, answer, "ai");
       }
       toast.success(`ตอบโดย ${res.provider}`);
     } catch (e) {
@@ -446,28 +429,12 @@ export function UnifiedInboxPage() {
           </div>
         </div>
 
-        {pref && (
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Heart className="w-3 h-3" /> Preference ที่ AI จับได้</div>
-            <div className="bg-background border border-border rounded-xl p-3 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">สนใจ</span><span>{pref.interestedItem} ({pref.interestedZone})</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">วันที่</span><span>{pref.preferredDateTime}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">งบ</span><span>{pref.budget.toLocaleString()} ฿</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Urgency</span><StatusBadge label={pref.urgency} variant={pref.urgency === "high" ? "danger" : "warning"} /></div>
-            </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Heart className="w-3 h-3" /> Live Thread</div>
+          <div className="bg-background border border-border rounded-xl p-3 space-y-1 text-xs text-muted-foreground">
+            อ่านจากตาราง inbox_messages แบบ realtime เท่านั้น ไม่มี local mock ในหน้านี้
           </div>
-        )}
-
-        {linkedInq && (
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI Inquiry ที่เชื่อมโยง</div>
-            <div className="bg-background border border-border rounded-xl p-3 text-xs">
-              <div className="font-medium">{linkedInq.id}</div>
-              <div className="text-muted-foreground mt-0.5">{linkedInq.interestedItem} / {linkedInq.interestedZone}</div>
-              <div className="mt-2"><StatusBadge label={linkedInq.status} variant="primary" /></div>
-            </div>
-          </div>
-        )}
+        </div>
 
         <ActionButton variant="outline" icon={<Link2 className="w-3 h-3" />} className="w-full justify-center">ดู Inquiry เต็มหน้าจอ</ActionButton>
       </aside>
