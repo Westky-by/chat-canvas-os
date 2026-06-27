@@ -106,7 +106,9 @@ interface AppState {
 
 const mask = (raw: string) => (raw.length <= 4 ? "••••" : `•••• ${raw.slice(-4)}`);
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
   customers: [...seed.customers],
   catalog: [...seed.catalog],
   conversations: [...seed.conversations],
