@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { Sparkles, Zap, Save, Plus, Trash2, ShieldAlert } from "lucide-react";
+import { Sparkles, Zap, Save, Plus, Trash2, ShieldAlert, Bell } from "lucide-react";
 import { toast } from "sonner";
 import type { AIProvider } from "@/types";
 
@@ -94,17 +94,31 @@ function ProviderForm({
   const [model, setModel] = useState(provider.model);
   const [rawKey, setRawKey] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(provider.systemPrompt ?? "");
+  const [ownerLineId, setOwnerLineId] = useState(provider.ownerLineId ?? "");
+
+  const notifyOwner = useAppStore((s) => s.notifyOwner);
 
   useEffect(() => { setModel(provider.model); }, [provider.model]);
   useEffect(() => { setSystemPrompt(provider.systemPrompt ?? ""); }, [provider.systemPrompt]);
+  useEffect(() => { setOwnerLineId(provider.ownerLineId ?? ""); }, [provider.ownerLineId]);
 
   const save = () => {
-    const patch: Partial<AIProvider> = { providerLabel, model, systemPrompt };
+    const patch: Partial<AIProvider> = { providerLabel, model, systemPrompt, ownerLineId };
     if (rawKey) (patch as { rawKey: string }).rawKey = rawKey;
     onSave(provider.id, patch);
     setRawKey("");
     toast.success("บันทึก Provider แล้ว");
   };
+
+  const testNotify = () => {
+    if (!ownerLineId.trim()) return toast.error("กรอก LINE ID ของเจ้าของก่อน");
+    notifyOwner(
+      `ai_handoff:${provider.name}`,
+      `🔔 ทดสอบ: AI (${provider.name}) จะแจ้ง Owner LINE ID ${ownerLineId} เมื่อมีลูกค้าต้องการติดต่อ`,
+      "LINE",
+    );
+  };
+
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
@@ -179,9 +193,27 @@ function ProviderForm({
         />
       </div>
 
-      <div className="flex justify-end">
+      <div>
+        <label className="text-xs font-medium text-foreground flex items-center gap-1">
+          <Bell className="w-3 h-3 text-primary" /> Owner LINE ID — สำหรับ AI ทักหาเจ้าของ
+        </label>
+        <input
+          type="text"
+          value={ownerLineId}
+          onChange={(e) => setOwnerLineId(e.target.value)}
+          placeholder="เช่น U1234abcd... (LINE User ID) หรือ C... (Group ID)"
+          className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono"
+        />
+        <p className="text-[10px] text-muted-foreground mt-1">
+          เมื่อ AI พบรายละเอียดที่ต้องให้เจ้าของติดต่อลูกค้า ระบบจะส่งข้อความเข้า LINE ID นี้ผ่าน LINE OA ที่ตั้งไว้ใน Chat Integrations · ผูกกับเมนู <span className="text-primary">Owner Notifications</span> โดยอัตโนมัติ
+        </p>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <ActionButton icon={<Bell className="w-3 h-3" />} onClick={testNotify}>ทดสอบแจ้ง Owner</ActionButton>
         <ActionButton variant="primary" icon={<Save className="w-3 h-3" />} onClick={save}>บันทึก</ActionButton>
       </div>
     </div>
   );
 }
+
