@@ -22,6 +22,36 @@ type ChatIntegrationConfig = {
 };
 
 const jsonHeaders = { "Content-Type": "application/json" };
+const DEFAULT_LINE_REPLY_ENDPOINT = "https://api.line.me/v2/bot/message/reply";
+const DEFAULT_LINE_PUSH_ENDPOINT = "https://api.line.me/v2/bot/message/push";
+
+function timeoutSignal(ms: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => clearTimeout(timeout) };
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number, label: string) {
+  const timeout = timeoutSignal(timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: timeout.signal });
+  } catch (error) {
+    if (timeout.signal.aborted) throw new Error(`${label}_timeout`);
+    throw error;
+  } finally {
+    timeout.clear();
+  }
+}
+
+function resolveLineReplyEndpoint(configured?: string) {
+  const endpoint = configured?.trim();
+  if (endpoint?.startsWith("https://") && endpoint.includes("/v2/bot/message/reply")) return endpoint;
+  return DEFAULT_LINE_REPLY_ENDPOINT;
+}
+
+function isInvalidReplyToken(status: number, body: string) {
+  return status === 400 && body.toLowerCase().includes("reply token");
+}
 
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
@@ -93,9 +123,12 @@ async function updateIntegrationStatus(channelType: string, patch: { last_error?
 
 async function getLineProfile(userId: string, token: string) {
   if (!userId || userId === "unknown") return undefined;
-  const res = await fetch(`https://api.line.me/v2/bot/profile/${encodeURIComponent(userId)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetchWithTimeout(
+    `https://api.line.me/v2/bot/profile/${encodeURIComponent(userId)}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+    2500,
+    "line_profile",
+  );
   if (!res.ok) {
     console.warn(`[webhook:line] profile lookup failed ${res.status}`);
     return undefined;
@@ -239,14 +272,44 @@ async function createAiText(message: NormalizedMessage) {
     import("@/lib/ai-gateway.server"),
   ]);
   const gateway = createLovableAiGatewayProvider(key);
-  const result = await generateText({
-    model: gateway("google/gemini-2.5-flash-lite"),
-    system:
-      "คุณคือผู้ช่วยแชทธุรกิจภาษาไทย ตอบลูกค้าทาง LINE ให้สุภาพ กระชับ เป็นธรรมชาติ ถ้าไม่มีข้อมูลแน่ชัดให้ขอรายละเอียดเพิ่ม และห้ามอ้างว่าระบบเป็น mock หรือ demo",
-    prompt: `ข้อความลูกค้าจาก LINE user ${message.externalUserId}: ${message.text}`,
-  });
+  const timeout = timeoutSignal(12000);
+  try {
+    const result = await generateText({
+      model: gateway("google/gemini-2.5-flash-lite"),
+      system:
+        "คุณคือผู้ช่วยแชทธุรกิจภาษาไทย ตอบลูกค้าทาง LINE ให้สุภาพ กระชับ เป็นธรรมชาติ ถ้าไม่มีข้อมูลแน่ชัดให้ขอรายละเอียดเพิ่ม และห้ามอ้างว่าระบบเป็น mock หรือ demo",
+      prompt: `ข้อความลูกค้าจาก LINE user ${message.externalUserId}: ${message.text}`,
+      abortSignal: timeout.signal,
+    });
 
-  return result.text.trim() || "รับทราบครับ ขอรายละเอียดเพิ่มเติมได้เลยครับ";
+    return result.text.trim() || "รับทราบครับ ขอรายละเอียดเพิ่มเติมได้เลยครับ";
+  } finally {
+    timeout.clear();
+  }
+}
+
+async function postLineJson(endpoint: string, token: string, body: unknown, label: string) {
+  const res = await fetchWithTimeout(
+    endpoint,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+    9000,
+    label,
+  );
+  const responseBody = res.ok ? "" : await res.text();
+  return { ok: res.ok, status: res.status, body: responseBody };
+}
+
+function readableLineError(status: number, body: string) {
+  if (status === 401) return "LINE token ถูกปฏิเสธ: กรุณาใส่ Channel Access Token (long-lived) ของ LINE OA ตัวเดียวกับ webhook";
+  if (isInvalidReplyToken(status, body)) return "LINE replyToken ใช้ไม่ได้แล้ว ระบบจะลองส่งแบบ push แทน";
+  return `LINE reply ${status}: ${body.slice(0, 300)}`;
 }
 
 async function replyToLine(message: NormalizedMessage) {
@@ -271,34 +334,85 @@ async function replyToLine(message: NormalizedMessage) {
   }
 
   if (!message.userName) {
-    message.userName = await getLineProfile(message.externalUserId, token);
+    try {
+      message.userName = await getLineProfile(message.externalUserId, token);
+    } catch (error) {
+      console.warn("[webhook:line] profile lookup timed out or failed", error);
+    }
   }
-  const text = await createAiText(message);
-  const endpoint = integration.endpoint || "https://api.line.me/v2/bot/message/reply";
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      replyToken: message.replyToken,
-      messages: [{ type: "text", text: text.slice(0, 5000) }],
-    }),
-  });
 
-  if (!res.ok) {
-    const body = await res.text();
-    console.error(`[webhook:line] reply failed ${res.status}: ${body.slice(0, 500)}`);
+  let text: string;
+  try {
+    text = await createAiText(message);
+  } catch (error) {
+    const aiError = error instanceof Error ? error.message : "ai_generation_failed";
+    console.error(`[webhook:line] AI reply generation failed: ${aiError}`);
+    await updateIntegrationStatus("LINE", { last_error: `AI reply failed: ${aiError.slice(0, 250)}` });
+    text = "รับทราบครับ ทีมงานได้รับข้อความแล้ว และจะติดต่อกลับโดยเร็วที่สุดครับ";
+  }
+
+  const endpoint = resolveLineReplyEndpoint(integration.endpoint);
+  let replyResult: { ok: boolean; status: number; body: string };
+  try {
+    replyResult = await postLineJson(
+      endpoint,
+      token,
+      {
+        replyToken: message.replyToken,
+        messages: [{ type: "text", text: text.slice(0, 5000) }],
+      },
+      "line_reply",
+    );
+  } catch (error) {
+    const err = error instanceof Error ? error.message : "line_reply_failed";
+    console.error(`[webhook:line] reply request failed: ${err}`);
     await persistOutbound(message, text, "failed");
-    await updateIntegrationStatus("LINE", { last_error: `LINE reply ${res.status}: ${body.slice(0, 300)}` });
-    return { ok: false, status: res.status, error: body.slice(0, 500) };
+    await updateIntegrationStatus("LINE", { last_error: err.slice(0, 300) });
+    return { ok: false, status: 500, error: err };
+  }
+
+  if (!replyResult.ok) {
+    const lineError = readableLineError(replyResult.status, replyResult.body);
+    console.error(`[webhook:line] reply failed ${replyResult.status}: ${replyResult.body.slice(0, 500)}`);
+
+    if (isInvalidReplyToken(replyResult.status, replyResult.body)) {
+      try {
+        const pushResult = await postLineJson(
+          DEFAULT_LINE_PUSH_ENDPOINT,
+          token,
+          {
+            to: message.externalUserId,
+            messages: [{ type: "text", text: text.slice(0, 5000) }],
+          },
+          "line_push_fallback",
+        );
+        if (pushResult.ok) {
+          await persistOutbound(message, text, "sent");
+          await updateIntegrationStatus("LINE", { last_error: null });
+          console.log(`[webhook:line] replied to ${message.externalUserId} via push fallback`);
+          return { ok: true, status: pushResult.status, fallback: "push" };
+        }
+        const pushError = readableLineError(pushResult.status, pushResult.body);
+        await persistOutbound(message, text, "failed");
+        await updateIntegrationStatus("LINE", { last_error: pushError });
+        return { ok: false, status: pushResult.status, error: pushError };
+      } catch (error) {
+        const pushError = error instanceof Error ? error.message : "line_push_fallback_failed";
+        await persistOutbound(message, text, "failed");
+        await updateIntegrationStatus("LINE", { last_error: pushError.slice(0, 300) });
+        return { ok: false, status: 500, error: pushError };
+      }
+    }
+
+    await persistOutbound(message, text, "failed");
+    await updateIntegrationStatus("LINE", { last_error: lineError });
+    return { ok: false, status: replyResult.status, error: lineError };
   }
 
   await persistOutbound(message, text, "sent");
   await updateIntegrationStatus("LINE", { last_error: null });
   console.log(`[webhook:line] replied to ${message.externalUserId}`);
-  return { ok: true, status: res.status };
+  return { ok: true, status: replyResult.status };
 }
 
 async function processReplies(channel: string, messages: NormalizedMessage[]) {
