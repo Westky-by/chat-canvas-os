@@ -19,7 +19,9 @@ export interface Customer {
   tier: "VIP" | "Regular" | "New";
   tags: string[];
   lastActivity: string;
+  note?: string;
 }
+
 
 export interface CatalogItem {
   id: ID;
