@@ -182,6 +182,8 @@ export interface AIProvider {
   rawKey?: string;
   systemPrompt?: string;
   providerLabel?: string;
+  /** LINE User/Group ID เจ้าของ — ให้ AI ส่งแจ้งเตือนเมื่อมีลูกค้าต้องการติดต่อ */
+  ownerLineId?: string;
   role: "primary" | "fallback" | "manual";
   lastTested?: string;
   costLimit: number;
