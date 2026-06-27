@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { Check, X, RotateCcw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,7 +31,7 @@ export function PaymentSlipReviewPage() {
                   <div className="flex justify-between"><span className="text-muted-foreground">ลูกค้า</span><span>{cust?.name}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Order</span><span>{s.orderId ?? "—"}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">ยอด</span><span className="text-primary font-semibold">{s.amount.toLocaleString()} ฿</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">อัปโหลด</span><span>{fmtRelative(s.uploadedAt)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">อัปโหลด</span><span>{<RelativeTime iso={s.uploadedAt} />}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">ผู้ตรวจ</span><span>{s.reviewer ?? "—"}</span></div>
                 </div>
                 <div className="flex gap-1 pt-2 border-t border-border flex-wrap">

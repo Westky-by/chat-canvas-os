@@ -3,7 +3,7 @@ import { DataTable, type Column } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { toast } from "sonner";
 import { MessageSquare, Heart, StickyNote } from "lucide-react";
 import type { Customer } from "@/types";
@@ -18,7 +18,7 @@ export function CRMPage() {
     { key: "phone", header: "เบอร์" },
     { key: "tier", header: "Tier", render: (r) => <StatusBadge label={r.tier} variant={r.tier === "VIP" ? "primary" : "muted"} /> },
     { key: "tags", header: "Tags", render: (r) => <div className="flex gap-1 flex-wrap">{r.tags.map((t) => <span key={t} className="text-[10px] bg-surface-elevated border border-border px-1.5 py-0.5 rounded">{t}</span>)}</div> },
-    { key: "lastActivity", header: "Last Activity", render: (r) => fmtRelative(r.lastActivity) },
+    { key: "lastActivity", header: "Last Activity", render: (r) => <RelativeTime iso={r.lastActivity} /> },
     {
       key: "actions",
       header: "Actions",

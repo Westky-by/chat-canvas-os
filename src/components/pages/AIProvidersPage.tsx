@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { ProviderCard } from "@/components/common/ProviderCard";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { Sparkles, Key, ShieldAlert, Zap } from "lucide-react";
 
 export function AIProvidersPage() {
@@ -26,7 +26,7 @@ export function AIProvidersPage() {
             model={p.model}
             maskedKey={p.maskedKey}
             role={p.role}
-            lastTested={p.lastTested ? fmtRelative(p.lastTested) : undefined}
+            lastTested={p.lastTested ? <RelativeTime iso={p.lastTested} /> : undefined}
             costLimit={p.costLimit}
             icon={<Sparkles className="w-4 h-4" />}
             actions={

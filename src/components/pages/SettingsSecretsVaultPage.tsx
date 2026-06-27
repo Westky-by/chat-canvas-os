@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { Key, ShieldAlert, Zap, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ export function SettingsSecretsVaultPage() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold">{p.name}</div>
                 <div className="text-[11px] text-muted-foreground font-mono">{p.maskedKey}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">ทดสอบล่าสุด: {p.lastTested ? fmtRelative(p.lastTested) : "—"}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">ทดสอบล่าสุด: {p.lastTested ? <RelativeTime iso={p.lastTested} /> : "—"}</div>
               </div>
               <StatusBadge label={p.status} variant={p.status === "active" ? "success" : "muted"} />
               <ActionButton size="sm" icon={<RotateCw className="w-3 h-3" />} onClick={() => rotate(p.id)}>Rotate</ActionButton>

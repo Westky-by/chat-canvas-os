@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { ActionButton } from "@/components/common/ActionButton";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { Bell, Zap, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,7 +28,7 @@ export function OwnerNotificationsPage() {
                 <StatusBadge label={r.channel} variant="info" />
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{r.template}</div>
-              <div className="text-[10px] text-muted-foreground mt-1">ส่งล่าสุด: {r.lastSent ? fmtRelative(r.lastSent) : "—"}</div>
+              <div className="text-[10px] text-muted-foreground mt-1">ส่งล่าสุด: {r.lastSent ? <RelativeTime iso={r.lastSent} /> : "—"}</div>
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={r.enabled} onChange={() => toggle(r.id)} />

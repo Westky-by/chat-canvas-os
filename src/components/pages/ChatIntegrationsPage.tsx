@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { IntegrationCard } from "@/components/common/IntegrationCard";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { MessageCircle, Zap, Copy, Settings } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,8 +21,8 @@ export function ChatIntegrationsPage() {
             status={i.status}
             webhookUrl={i.webhookUrl}
             maskedToken={i.maskedToken}
-            lastSync={i.lastSync ? fmtRelative(i.lastSync) : undefined}
-            lastMessage={i.lastMessage ? fmtRelative(i.lastMessage) : undefined}
+            lastSync={i.lastSync ? <RelativeTime iso={i.lastSync} /> : undefined}
+            lastMessage={i.lastMessage ? <RelativeTime iso={i.lastMessage} /> : undefined}
             error={i.error}
             icon={<MessageCircle className="w-4 h-4" />}
             actions={

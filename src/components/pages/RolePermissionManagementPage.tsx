@@ -3,7 +3,7 @@ import { DataTable, type Column } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import type { User } from "@/types";
 import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
@@ -21,7 +21,7 @@ export function RolePermissionManagementPage() {
     { key: "email", header: "อีเมล" },
     { key: "role", header: "บทบาท", render: (r) => <StatusBadge label={roles.find((rl) => rl.id === r.roleId)?.name ?? r.roleId} variant="info" /> },
     { key: "status", header: "สถานะ", render: (r) => <StatusBadge label={r.status} variant={r.status === "active" ? "success" : r.status === "suspended" ? "danger" : "warning"} /> },
-    { key: "lastLogin", header: "Login ล่าสุด", render: (r) => r.lastLogin ? fmtRelative(r.lastLogin) : "—" },
+    { key: "lastLogin", header: "Login ล่าสุด", render: (r) => r.lastLogin ? <RelativeTime iso={r.lastLogin} /> : "—" },
     { key: "actions", header: "Actions", render: (r) => <ActionButton size="sm" variant="danger" onClick={() => suspend(r.id)}>{r.status === "suspended" ? "ปลดระงับ" : "ระงับ"}</ActionButton> },
   ];
 

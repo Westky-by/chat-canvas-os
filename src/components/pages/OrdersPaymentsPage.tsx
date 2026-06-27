@@ -3,7 +3,7 @@ import { DataTable, type Column } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { toast } from "sonner";
 import type { Order } from "@/types";
 
@@ -20,7 +20,7 @@ export function OrdersPaymentsPage() {
     { key: "paymentStatus", header: "ชำระเงิน", render: (r) => <StatusBadge label={r.paymentStatus} variant={r.paymentStatus === "paid" ? "success" : r.paymentStatus === "pending_review" ? "warning" : "muted"} /> },
     { key: "fulfillmentStatus", header: "ดำเนินการ", render: (r) => <StatusBadge label={r.fulfillmentStatus} variant={r.fulfillmentStatus === "completed" || r.fulfillmentStatus === "confirmed" ? "success" : "warning"} /> },
     { key: "channel", header: "Channel", render: (r) => <StatusBadge label={r.channel} variant="info" /> },
-    { key: "createdAt", header: "เมื่อ", render: (r) => fmtRelative(r.createdAt) },
+    { key: "createdAt", header: "เมื่อ", render: (r) => <RelativeTime iso={r.createdAt} /> },
     {
       key: "actions",
       header: "Actions",

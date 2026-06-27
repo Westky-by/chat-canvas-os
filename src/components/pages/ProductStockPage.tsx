@@ -3,7 +3,7 @@ import { DataTable, type Column } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { toast } from "sonner";
 import type { Product } from "@/types";
 import { useState } from "react";
@@ -32,7 +32,7 @@ export function ProductStockPage() {
     { key: "status", header: "สถานะ", render: (r) => <StatusBadge label={r.status} variant={r.status === "available" ? "success" : r.status === "low" ? "warning" : "danger"} /> },
     { key: "catalogId", header: "Catalog", render: (r) => r.catalogId ?? "—" },
     { key: "cfKeyword", header: "CF Keyword", render: (r) => <span className="font-mono">{r.cfKeyword ?? "—"}</span> },
-    { key: "updated", header: "อัปเดต", render: (r) => fmtRelative(r.updatedAt) },
+    { key: "updated", header: "อัปเดต", render: (r) => <RelativeTime iso={r.updatedAt} /> },
     {
       key: "actions",
       header: "Actions",
