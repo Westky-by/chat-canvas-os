@@ -107,12 +107,8 @@ function AuthPage() {
           )}
         </div>
 
-        <div className="mt-6 rounded-lg bg-slate-800/60 border border-slate-700 p-3 text-xs text-slate-300">
-          <div className="font-semibold text-teal-400 mb-1">บัญชี Owner ที่ระบบเตรียมไว้</div>
-          <div>Email: <code className="text-white">wesaa521@gmail.com</code></div>
-          <div>Password: <code className="text-white">OwnerAdmin2026!</code></div>
-          <div className="mt-1 text-slate-500">เปลี่ยนรหัสได้หลังจาก login</div>
-        </div>
+
+
 
         <div className="mt-4 text-center">
           <Link to="/" className="text-xs text-slate-500 hover:text-slate-300">← กลับหน้าแรก</Link>
