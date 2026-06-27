@@ -18,6 +18,7 @@ type ChatIntegrationConfig = {
   token?: string;
   endpoint?: string;
   status?: string;
+  channelSecret?: string;
 };
 
 const jsonHeaders = { "Content-Type": "application/json" };
@@ -36,7 +37,8 @@ function toBase64(bytes: ArrayBuffer) {
 }
 
 async function verifyLineSignature(rawBody: string, signature: string | null) {
-  const secret = process.env.LINE_CHANNEL_SECRET;
+  const integration = await getChatIntegration("LINE");
+  const secret = integration.channelSecret || process.env.LINE_CHANNEL_SECRET;
   if (!secret) return { ok: true, skipped: true };
   if (!signature) return { ok: false, skipped: false };
   const encoder = new TextEncoder();
@@ -52,7 +54,7 @@ async function getChatIntegration(channelType: string): Promise<ChatIntegrationC
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("chat_integrations")
-      .select("raw_token, send_endpoint, status")
+      .select("raw_token, send_endpoint, status, extra")
       .eq("channel_type", channelType.toUpperCase())
       .maybeSingle();
 
@@ -61,10 +63,15 @@ async function getChatIntegration(channelType: string): Promise<ChatIntegrationC
       return {};
     }
 
+    const extra = data?.extra && typeof data.extra === "object" && !Array.isArray(data.extra) ? data.extra as Record<string, unknown> : {};
     return {
       token: data?.raw_token?.trim() || undefined,
       endpoint: data?.send_endpoint?.trim() || undefined,
       status: data?.status ?? undefined,
+      channelSecret:
+        (typeof extra.lineChannelSecret === "string" && extra.lineChannelSecret.trim()) ||
+        (typeof extra.channelSecret === "string" && extra.channelSecret.trim()) ||
+        undefined,
     };
   } catch (error) {
     console.warn(`[webhook:${channelType.toLowerCase()}] integration lookup skipped`, error);
