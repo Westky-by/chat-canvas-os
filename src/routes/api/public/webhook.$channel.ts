@@ -14,6 +14,12 @@ type NormalizedMessage = {
   receivedAt: string;
 };
 
+type ChatIntegrationConfig = {
+  token?: string;
+  endpoint?: string;
+  status?: string;
+};
+
 const jsonHeaders = { "Content-Type": "application/json" };
 
 function safeEqual(a: string, b: string) {
@@ -39,6 +45,56 @@ async function verifyLineSignature(rawBody: string, signature: string | null) {
   ]);
   const expected = toBase64(await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody)));
   return { ok: safeEqual(signature, expected), skipped: false };
+}
+
+async function getChatIntegration(channelType: string): Promise<ChatIntegrationConfig> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("chat_integrations")
+      .select("raw_token, send_endpoint, status")
+      .eq("channel_type", channelType.toUpperCase())
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`[webhook:${channelType.toLowerCase()}] integration lookup failed: ${error.message}`);
+      return {};
+    }
+
+    return {
+      token: data?.raw_token?.trim() || undefined,
+      endpoint: data?.send_endpoint?.trim() || undefined,
+      status: data?.status ?? undefined,
+    };
+  } catch (error) {
+    console.warn(`[webhook:${channelType.toLowerCase()}] integration lookup skipped`, error);
+    return {};
+  }
+}
+
+async function updateIntegrationStatus(channelType: string, patch: { last_error?: string | null; last_sync?: string }) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("chat_integrations")
+      .update({ ...patch, last_sync: patch.last_sync ?? new Date().toISOString() })
+      .eq("channel_type", channelType.toUpperCase());
+  } catch (error) {
+    console.warn(`[webhook:${channelType.toLowerCase()}] integration status update skipped`, error);
+  }
+}
+
+async function getLineProfile(userId: string, token: string) {
+  if (!userId || userId === "unknown") return undefined;
+  const res = await fetch(`https://api.line.me/v2/bot/profile/${encodeURIComponent(userId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    console.warn(`[webhook:line] profile lookup failed ${res.status}`);
+    return undefined;
+  }
+  const profile = (await res.json()) as { displayName?: string };
+  return profile.displayName?.trim() || undefined;
 }
 
 function normalize(channel: string, body: unknown): NormalizedMessage[] {
@@ -135,11 +191,32 @@ async function persist(messages: NormalizedMessage[]) {
       text: m.text,
       raw: m.raw as never,
       received_at: m.receivedAt,
+      sender: "customer",
+      delivery_status: "received",
     }));
     const { error } = await supabaseAdmin.from("inbox_messages").insert(rows);
     if (error) console.warn("[webhook] insert failed (table may not exist yet):", error.message);
   } catch (e) {
     console.warn("[webhook] persistence skipped:", e);
+  }
+}
+
+async function persistOutbound(message: NormalizedMessage, text: string, status: "sent" | "failed") {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("inbox_messages").insert({
+      channel: message.channel,
+      external_user_id: message.externalUserId,
+      user_name: message.userName ?? null,
+      text,
+      raw: { direction: "outbound", source: "ai" } as never,
+      received_at: new Date().toISOString(),
+      sender: "ai",
+      delivery_status: status,
+    });
+    if (error) console.warn("[webhook] outbound insert failed:", error.message);
+  } catch (e) {
+    console.warn("[webhook] outbound persistence skipped:", e);
   }
 }
 
@@ -166,21 +243,32 @@ async function createAiText(message: NormalizedMessage) {
 }
 
 async function replyToLine(message: NormalizedMessage) {
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const integration = await getChatIntegration("LINE");
+  const token = integration.token || process.env.LINE_CHANNEL_ACCESS_TOKEN;
   if (!token) {
     console.error("[webhook:line] LINE_CHANNEL_ACCESS_TOKEN missing; cannot send reply");
+    await updateIntegrationStatus("LINE", { last_error: "missing_line_token" });
     return { ok: false, status: 500, error: "missing_line_token" };
+  }
+  if (integration.status && integration.status !== "connected") {
+    await persistOutbound(message, "AI reply skipped: LINE integration is disabled", "skipped" as never);
+    return { ok: true, status: 200, skipped: "integration_disabled" };
   }
   if (!message.replyToken) {
     console.warn("[webhook:line] missing replyToken; received event cannot be replied to");
+    await updateIntegrationStatus("LINE", { last_error: "missing_reply_token" });
     return { ok: false, status: 400, error: "missing_reply_token" };
   }
   if (!message.text.trim()) {
     return { ok: true, status: 200, skipped: "empty_text" };
   }
 
+  if (!message.userName) {
+    message.userName = await getLineProfile(message.externalUserId, token);
+  }
   const text = await createAiText(message);
-  const res = await fetch("https://api.line.me/v2/bot/message/reply", {
+  const endpoint = integration.endpoint || "https://api.line.me/v2/bot/message/reply";
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -195,9 +283,13 @@ async function replyToLine(message: NormalizedMessage) {
   if (!res.ok) {
     const body = await res.text();
     console.error(`[webhook:line] reply failed ${res.status}: ${body.slice(0, 500)}`);
+    await persistOutbound(message, text, "failed");
+    await updateIntegrationStatus("LINE", { last_error: `LINE reply ${res.status}: ${body.slice(0, 300)}` });
     return { ok: false, status: res.status, error: body.slice(0, 500) };
   }
 
+  await persistOutbound(message, text, "sent");
+  await updateIntegrationStatus("LINE", { last_error: null });
   console.log(`[webhook:line] replied to ${message.externalUserId}`);
   return { ok: true, status: res.status };
 }
@@ -246,6 +338,17 @@ export const Route = createFileRoute("/api/public/webhook/$channel")({
           body = {};
         }
         const messages = normalize(channel, body);
+        if (channel === "line" && messages.length > 0) {
+          const integration = await getChatIntegration("LINE");
+          const token = integration.token || process.env.LINE_CHANNEL_ACCESS_TOKEN;
+          if (token) {
+            await Promise.all(
+              messages.map(async (message) => {
+                message.userName = message.userName || (await getLineProfile(message.externalUserId, token));
+              }),
+            );
+          }
+        }
         console.log(`[webhook:${channel}] received ${messages.length} message(s)`);
         await persist(messages);
         const replies = await processReplies(channel, messages);
