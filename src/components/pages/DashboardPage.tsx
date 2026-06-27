@@ -11,13 +11,52 @@ export function DashboardPage() {
   const inquiries = useAppStore((s) => s.inquiries);
   const bookings = useAppStore((s) => s.bookings);
   const orders = useAppStore((s) => s.orders);
+  const aiFeedback = useAppStore((s) => s.aiFeedback);
   const notif = useAppStore((s) => s.ownerNotificationLogs);
   const addCatalog = useAppStore((s) => s.addCatalogItemFromCopilot);
   const notifyOwner = useAppStore((s) => s.notifyOwner);
   const addMessage = useAppStore((s) => s.addMessage);
   const conv = useAppStore((s) => s.conversations[0]);
 
-  const revenue = orders.filter((o) => o.paymentStatus === "paid").reduce((a, b) => a + b.amount, 0);
+  // ===== Real metrics (computed from actual store data) =====
+  const now = Date.now();
+  const DAY = 86_400_000;
+  const WEEK = 7 * DAY;
+  const inDay = (iso: string, offset = 0) => {
+    const t = new Date(iso).getTime();
+    return t >= now - (offset + 1) * DAY && t < now - offset * DAY;
+  };
+  const inWeek = (iso: string, offset = 0) => {
+    const t = new Date(iso).getTime();
+    return t >= now - (offset + 1) * WEEK && t < now - offset * WEEK;
+  };
+  const pct = (cur: number, prev: number) => {
+    if (prev === 0) return cur === 0 ? 0 : 100;
+    return ((cur - prev) / prev) * 100;
+  };
+  const fmtDelta = (p: number, suffix: string) =>
+    `${p >= 0 ? "+" : ""}${p.toFixed(1)}% ${suffix}`;
+
+  const inqToday = inquiries.filter((i) => inDay(i.createdAt, 0)).length;
+  const inqYday = inquiries.filter((i) => inDay(i.createdAt, 1)).length;
+  const inqDelta = pct(inqToday, inqYday);
+
+  const paidOrders = orders.filter((o) => o.paymentStatus === "paid");
+  const revenue = paidOrders.reduce((a, b) => a + b.amount, 0);
+  const revThisWeek = paidOrders.filter((o) => inWeek(o.createdAt, 0)).reduce((a, b) => a + b.amount, 0);
+  const revLastWeek = paidOrders.filter((o) => inWeek(o.createdAt, 1)).reduce((a, b) => a + b.amount, 0);
+  const revDelta = pct(revThisWeek, revLastWeek);
+
+  const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+
+  // AI Accuracy = ค่าเฉลี่ย confidence จาก feedback ที่ผ่านการตรวจสอบ
+  const scored = aiFeedback.filter((f) => f.status === "correct" || f.status === "wrong");
+  const avgConfidence = scored.length
+    ? (scored.reduce((a, f) => a + f.confidence, 0) / scored.length) * 100
+    : 0;
+  const correctRate = scored.length
+    ? (scored.filter((f) => f.status === "correct").length / scored.length) * 100
+    : 0;
 
   return (
     <PageContainer
@@ -25,11 +64,34 @@ export function DashboardPage() {
       description="สรุปการทำงาน AI, การจอง, ยอดขาย และการแจ้งเตือนเจ้าของแบบเรียลไทม์"
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="AI Inquiries วันนี้" value={inquiries.length} hint="จากทุกช่องทาง" icon={<Sparkles className="w-4 h-4" />} trend={{ value: "+12% เทียบเมื่อวาน", positive: true }} />
-        <MetricCard label="การจองที่รอ" value={bookings.filter((b) => b.status === "pending").length} hint="ต้องการการยืนยัน" icon={<Calendar className="w-4 h-4" />} />
-        <MetricCard label="ยอดขายรวม" value={fmtTHB(revenue)} hint="จาก orders ที่ชำระแล้ว" icon={<DollarSign className="w-4 h-4" />} trend={{ value: "+8.4% week-on-week", positive: true }} />
-        <MetricCard label="AI Accuracy" value="92.4%" hint="confidence เฉลี่ย 30 วัน" icon={<Brain className="w-4 h-4" />} trend={{ value: "+1.2%", positive: true }} />
+        <MetricCard
+          label="AI Inquiries วันนี้"
+          value={inqToday}
+          hint={`เมื่อวาน ${inqYday} รายการ`}
+          icon={<Sparkles className="w-4 h-4" />}
+          trend={inquiries.length ? { value: fmtDelta(inqDelta, "เทียบเมื่อวาน"), positive: inqDelta >= 0 } : undefined}
+        />
+        <MetricCard
+          label="การจองที่รอ"
+          value={pendingBookings}
+          hint={`จากทั้งหมด ${bookings.length} รายการ`}
+          icon={<Calendar className="w-4 h-4" />}
+        />
+        <MetricCard
+          label="ยอดขายรวม"
+          value={fmtTHB(revenue)}
+          hint={`สัปดาห์นี้ ${fmtTHB(revThisWeek)}`}
+          icon={<DollarSign className="w-4 h-4" />}
+          trend={paidOrders.length ? { value: fmtDelta(revDelta, "week-on-week"), positive: revDelta >= 0 } : undefined}
+        />
+        <MetricCard
+          label="AI Accuracy"
+          value={scored.length ? `${correctRate.toFixed(1)}%` : "—"}
+          hint={scored.length ? `confidence เฉลี่ย ${avgConfidence.toFixed(1)}% จาก ${scored.length} ฟีดแบ็ก` : "ยังไม่มีฟีดแบ็ก"}
+          icon={<Brain className="w-4 h-4" />}
+        />
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-5">
