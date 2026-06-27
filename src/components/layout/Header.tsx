@@ -1,9 +1,21 @@
-import { Bell, Search, HelpCircle, User } from "lucide-react";
-import { useRouterState } from "@tanstack/react-router";
+import { Bell, Search, HelpCircle, User, LogOut } from "lucide-react";
+import { useRouterState, useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+
 
 export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const title = labelFor(pathname);
+
+  async function handleLogout() {
+    await signOut();
+    toast.success("ออกจากระบบแล้ว");
+    navigate({ to: "/auth" });
+  }
+
 
   return (
     <header className="h-14 border-b border-border bg-surface/60 backdrop-blur flex items-center px-5 gap-4 flex-shrink-0">
@@ -29,12 +41,20 @@ export function Header() {
         </div>
         <div className="text-xs">
           <div className="font-medium">Owner</div>
-          <div className="text-muted-foreground text-[10px]">owner@shop.local</div>
+          <div className="text-muted-foreground text-[10px]">{user?.email ?? "—"}</div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="ml-2 p-2 hover:bg-surface-hover rounded-lg text-muted-foreground"
+          title="ออกจากระบบ"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </header>
   );
 }
+
 
 function labelFor(path: string): string {
   const map: Record<string, string> = {
