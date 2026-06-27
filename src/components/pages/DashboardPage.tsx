@@ -136,6 +136,98 @@ export function DashboardPage() {
   };
   const removeStep = (id: string) => saveSteps(steps.filter((x) => x.id !== id));
 
+  // ===== Export =====
+  const buildReport = () => {
+    const inqRows = inquiries.filter((i) => inRange(i.createdAt));
+    const bookRows = bookings.filter((b) => inRange(b.date || new Date().toISOString()));
+    const orderRows = paidOrders.filter((o) => inRange(o.createdAt));
+    const notifRows = notif.filter((n) => inRange(n.at));
+    return { inqRows, bookRows, orderRows, notifRows };
+  };
+
+  const downloadFile = (filename: string, content: string, mime: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const csvEscape = (v: unknown) => {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const exportCSV = () => {
+    const { inqRows, bookRows, orderRows, notifRows } = buildReport();
+    const lines: string[] = [];
+    lines.push(`Dashboard Report,${rangeLabel}`);
+    lines.push(`Generated,${new Date().toISOString()}`);
+    lines.push("");
+    lines.push("Summary");
+    lines.push("Metric,Current,Previous");
+    lines.push(`AI Inquiries,${inqCur},${inqPrev}`);
+    lines.push(`Revenue (THB),${revCur},${revPrev}`);
+    lines.push(`Bookings in range,${bookingsInRange},`);
+    lines.push(`Pending Bookings,${pendingBookings},`);
+    lines.push(`AI Accuracy %,${correctRate.toFixed(1)},`);
+    lines.push(`AI Avg Confidence %,${avgConfidence.toFixed(1)},`);
+    lines.push("");
+    lines.push("Inquiries");
+    lines.push("id,channel,createdAt,message");
+    inqRows.forEach((i: any) => lines.push([i.id, i.channel, i.createdAt, i.message ?? i.text ?? ""].map(csvEscape).join(",")));
+    lines.push("");
+    lines.push("Bookings");
+    lines.push("id,resource,date,status,price");
+    bookRows.forEach((b: any) => lines.push([b.id, b.resource, b.date, b.status, b.price].map(csvEscape).join(",")));
+    lines.push("");
+    lines.push("Orders (paid)");
+    lines.push("id,amount,createdAt,customer");
+    orderRows.forEach((o: any) => lines.push([o.id, o.amount, o.createdAt, o.customer ?? ""].map(csvEscape).join(",")));
+    lines.push("");
+    lines.push("Owner Notifications");
+    lines.push("id,channel,at,message");
+    notifRows.forEach((n) => lines.push([n.id, n.channel, n.at, n.message].map(csvEscape).join(",")));
+    downloadFile(`dashboard_${rangeLabel.replace(/\s+/g, "_")}.csv`, "\uFEFF" + lines.join("\n"), "text/csv;charset=utf-8");
+  };
+
+  const exportPDF = () => {
+    const { inqRows, bookRows, orderRows, notifRows } = buildReport();
+    const esc = (s: unknown) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
+    const tableRows = (rows: any[], cols: string[]) =>
+      rows.length === 0
+        ? `<tr><td colspan="${cols.length}" style="text-align:center;color:#888;padding:8px">— ไม่มีข้อมูล —</td></tr>`
+        : rows.map((r) => `<tr>${cols.map((c) => `<td>${esc(r[c])}</td>`).join("")}</tr>`).join("");
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Dashboard ${esc(rangeLabel)}</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Tahoma,sans-serif;color:#111;margin:24px;font-size:12px}
+h1{font-size:20px;margin:0 0 4px} h2{font-size:14px;margin:18px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}
+.meta{color:#666;font-size:11px;margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.card{border:1px solid #ddd;border-radius:6px;padding:8px}.card .l{color:#666;font-size:10px}.card .v{font-size:16px;font-weight:700;margin-top:2px}
+table{width:100%;border-collapse:collapse;margin-top:4px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left;font-size:11px}th{background:#f4f4f4}
+@media print{.noprint{display:none}}
+</style></head><body>
+<h1>Dashboard Report</h1>
+<div class="meta">ช่วงเวลา: ${esc(rangeLabel)} • สร้างเมื่อ ${new Date().toLocaleString("th-TH")}</div>
+<div class="cards">
+<div class="card"><div class="l">AI Inquiries</div><div class="v">${inqCur}</div><div class="l">ก่อนหน้า ${inqPrev}</div></div>
+<div class="card"><div class="l">การจอง</div><div class="v">${bookingsInRange}</div><div class="l">รอยืนยัน ${pendingBookings}</div></div>
+<div class="card"><div class="l">ยอดขาย (THB)</div><div class="v">${revCur.toLocaleString()}</div><div class="l">ก่อนหน้า ${revPrev.toLocaleString()}</div></div>
+<div class="card"><div class="l">AI Accuracy</div><div class="v">${scored.length ? correctRate.toFixed(1) + "%" : "—"}</div><div class="l">conf ${avgConfidence.toFixed(1)}%</div></div>
+</div>
+<h2>Inquiries (${inqRows.length})</h2><table><thead><tr><th>ID</th><th>Channel</th><th>Created</th><th>Message</th></tr></thead><tbody>${tableRows(inqRows.map((i:any)=>({id:i.id,channel:i.channel,createdAt:i.createdAt,message:i.message??i.text??""})),["id","channel","createdAt","message"])}</tbody></table>
+<h2>Bookings (${bookRows.length})</h2><table><thead><tr><th>ID</th><th>Resource</th><th>Date</th><th>Status</th><th>Price</th></tr></thead><tbody>${tableRows(bookRows,["id","resource","date","status","price"])}</tbody></table>
+<h2>Orders – Paid (${orderRows.length})</h2><table><thead><tr><th>ID</th><th>Amount</th><th>Created</th><th>Customer</th></tr></thead><tbody>${tableRows(orderRows,["id","amount","createdAt","customer"])}</tbody></table>
+<h2>Owner Notifications (${notifRows.length})</h2><table><thead><tr><th>ID</th><th>Channel</th><th>At</th><th>Message</th></tr></thead><tbody>${tableRows(notifRows,["id","channel","at","message"])}</tbody></table>
+<div class="noprint" style="margin-top:18px;text-align:center"><button onclick="window.print()" style="padding:8px 16px;font-size:13px">พิมพ์ / บันทึกเป็น PDF</button></div>
+<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),300));</script>
+</body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) { alert("กรุณาอนุญาต popup เพื่อ export PDF"); return; }
+    w.document.write(html); w.document.close();
+  };
+
   return (
     <PageContainer
       title="ภาพรวมระบบ (Dashboard)"
