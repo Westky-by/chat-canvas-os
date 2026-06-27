@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
@@ -23,6 +23,17 @@ export function UnifiedInboxPage() {
   const [text, setText] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Auto-select conversation from ?customer=ID (e.g. navigated from CRM)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const cid = params.get("customer");
+    if (!cid) return;
+    const conv = conversations.find((c) => c.customerId === cid);
+    if (conv) setActiveId(conv.id);
+  }, [conversations]);
+
 
   const filteredConvs = useMemo(
     () => (selectedChannels.length === 0 ? conversations : conversations.filter((c) => selectedChannels.includes(c.channel))),
