@@ -183,6 +183,17 @@ function ProviderForm({
       </div>
 
       <div>
+        <label className="text-xs font-medium text-foreground">System Prompt</label>
+        <textarea
+          value={systemPrompt}
+          onChange={(e) => setSystemPrompt(e.target.value)}
+          rows={6}
+          placeholder="อธิบายตัวตนของผู้ช่วย AI เช่น ชื่อร้าน เมนู เวลาเปิด-ปิด ที่อยู่ ฯลฯ"
+          className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono leading-relaxed"
+        />
+      </div>
+
+      <div>
         <label className="text-xs font-medium text-foreground flex items-center gap-1">
           <Bell className="w-3 h-3 text-primary" /> Owner LINE ID — สำหรับ AI ทักหาเจ้าของ
         </label>
