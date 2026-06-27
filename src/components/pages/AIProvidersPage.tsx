@@ -94,17 +94,31 @@ function ProviderForm({
   const [model, setModel] = useState(provider.model);
   const [rawKey, setRawKey] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(provider.systemPrompt ?? "");
+  const [ownerLineId, setOwnerLineId] = useState(provider.ownerLineId ?? "");
+
+  const notifyOwner = useAppStore((s) => s.notifyOwner);
 
   useEffect(() => { setModel(provider.model); }, [provider.model]);
   useEffect(() => { setSystemPrompt(provider.systemPrompt ?? ""); }, [provider.systemPrompt]);
+  useEffect(() => { setOwnerLineId(provider.ownerLineId ?? ""); }, [provider.ownerLineId]);
 
   const save = () => {
-    const patch: Partial<AIProvider> = { providerLabel, model, systemPrompt };
+    const patch: Partial<AIProvider> = { providerLabel, model, systemPrompt, ownerLineId };
     if (rawKey) (patch as { rawKey: string }).rawKey = rawKey;
     onSave(provider.id, patch);
     setRawKey("");
     toast.success("บันทึก Provider แล้ว");
   };
+
+  const testNotify = () => {
+    if (!ownerLineId.trim()) return toast.error("กรอก LINE ID ของเจ้าของก่อน");
+    notifyOwner(
+      `ai_handoff:${provider.name}`,
+      `🔔 ทดสอบ: AI (${provider.name}) จะแจ้ง Owner LINE ID ${ownerLineId} เมื่อมีลูกค้าต้องการติดต่อ`,
+      "LINE",
+    );
+  };
+
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
