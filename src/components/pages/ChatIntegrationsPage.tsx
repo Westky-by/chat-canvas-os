@@ -211,6 +211,7 @@ function ChannelCard({
 
   const [endpoint, setEndpoint] = useState(item.send_endpoint ?? "");
   const [token, setToken] = useState("");
+  const [lineSecret, setLineSecret] = useState("");
   const [enabled, setEnabled] = useState(item.status === "connected");
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -218,6 +219,7 @@ function ChannelCard({
   useEffect(() => {
     setEndpoint(item.send_endpoint ?? "");
     setEnabled(item.status === "connected");
+    setLineSecret("");
   }, [item.send_endpoint, item.status]);
 
   const save = async () => {
@@ -227,7 +229,11 @@ function ChannelCard({
       status: enabled ? "connected" : "disconnected",
       last_sync: new Date().toISOString(),
     };
-    if (token) patch.raw_token = token;
+    if (token.trim()) patch.raw_token = token.trim();
+    if (item.channel_type === "LINE" && lineSecret.trim()) {
+      const extra = item.extra && typeof item.extra === "object" && !Array.isArray(item.extra) ? item.extra : {};
+      patch.extra = { ...extra, lineChannelSecret: lineSecret.trim() };
+    }
     const { error } = await supabase.from("chat_integrations").update(patch).eq("id", item.id);
     setSaving(false);
     if (error) {
@@ -235,6 +241,7 @@ function ChannelCard({
       return;
     }
     setToken("");
+    setLineSecret("");
     toast.success(`บันทึก ${item.name} แล้ว — webhook พร้อมใช้งาน`);
     await onChanged();
   };
@@ -318,6 +325,28 @@ function ChannelCard({
           <p className="text-[10px] text-muted-foreground mt-1">{meta.tokenHelp}</p>
         </div>
       </div>
+
+      {item.channel_type === "LINE" && (
+        <div>
+          <label className="text-xs font-medium text-foreground">Channel Secret (สำหรับตรวจ LINE Signature)</label>
+          <input
+            type="password"
+            value={lineSecret}
+            onChange={(e) => setLineSecret(e.target.value)}
+            placeholder="กรอก Channel Secret ถ้า webhook ขึ้น invalid signature"
+            className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            ต้องเป็น Channel Secret ของ LINE OA ตัวเดียวกับ Access Token ไม่ใช่ Basic ID หรือ User ID
+          </p>
+        </div>
+      )}
+
+      {item.last_error && (
+        <div className="text-[11px] bg-danger/10 border border-danger/30 text-danger rounded-lg px-3 py-2">
+          Last error: {item.last_error}
+        </div>
+      )}
 
       <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 text-xs text-primary hover:text-primary/80">
         {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}

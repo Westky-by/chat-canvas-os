@@ -140,30 +140,36 @@ export type Database = {
         Row: {
           channel: string
           created_at: string
+          delivery_status: string
           external_user_id: string
           id: string
           raw: Json | null
           received_at: string
+          sender: string
           text: string
           user_name: string | null
         }
         Insert: {
           channel: string
           created_at?: string
+          delivery_status?: string
           external_user_id: string
           id?: string
           raw?: Json | null
           received_at?: string
+          sender?: string
           text?: string
           user_name?: string | null
         }
         Update: {
           channel?: string
           created_at?: string
+          delivery_status?: string
           external_user_id?: string
           id?: string
           raw?: Json | null
           received_at?: string
+          sender?: string
           text?: string
           user_name?: string | null
         }

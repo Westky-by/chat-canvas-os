@@ -5,6 +5,7 @@ import { ActionButton } from "@/components/common/ActionButton";
 import { RelativeTime } from "@/components/common/RelativeTime";
 import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2, Filter, X, Loader2 } from "lucide-react";
 import { aiReply } from "@/lib/aiReply.functions";
+import { sendInboxMessage, syncLineProfiles } from "@/lib/inbox.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Channel, Conversation, Customer, Message } from "@/types";
@@ -19,6 +20,8 @@ type InboxRow = {
   text: string;
   received_at: string;
   created_at?: string;
+  sender?: string;
+  delivery_status?: string;
 };
 
 const toChannel = (raw: string): Channel => {
@@ -33,22 +36,20 @@ const toChannel = (raw: string): Channel => {
 };
 
 const shortExternalId = (id: string) => (id.length > 10 ? `…${id.slice(-8)}` : id);
+const toMessageSender = (sender?: string): Message["sender"] => {
+  if (sender === "ai") return "ai";
+  if (sender === "admin" || sender === "system") return "admin";
+  return "customer";
+};
 
 export function UnifiedInboxPage() {
-  const storedConversations = useAppStore((s) => s.conversations);
-  const storedMessages = useAppStore((s) => s.messages);
-  const storedCustomers = useAppStore((s) => s.customers);
   const catalog = useAppStore((s) => s.catalog);
-  const prefs = useAppStore((s) => s.customerPreferences);
-  const inquiries = useAppStore((s) => s.inquiries);
-  const addMessage = useAppStore((s) => s.addMessage);
-  const setConversationMode = useAppStore((s) => s.setConversationMode);
 
   const [liveRows, setLiveRows] = useState<InboxRow[]>([]);
   const [liveModes, setLiveModes] = useState<Record<string, Conversation["mode"]>>({});
   const [liveLoading, setLiveLoading] = useState(true);
   const [liveError, setLiveError] = useState("");
-  const [activeId, setActiveId] = useState(storedConversations[0]?.id ?? "");
+  const [activeId, setActiveId] = useState("");
   const [text, setText] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -59,7 +60,7 @@ export function UnifiedInboxPage() {
     const loadInbox = async () => {
       const { data, error } = await supabase
         .from("inbox_messages")
-        .select("id, channel, external_user_id, user_name, text, received_at, created_at")
+      .select("id, channel, external_user_id, user_name, text, received_at, created_at, sender, delivery_status")
         .order("received_at", { ascending: false })
         .limit(300);
 
@@ -75,6 +76,11 @@ export function UnifiedInboxPage() {
     };
 
     loadInbox();
+    syncLineProfiles()
+      .then((res) => {
+        if (res.updated > 0) void loadInbox();
+      })
+      .catch(() => undefined);
     const poll = window.setInterval(loadInbox, 8000);
     const channel = supabase
       .channel("inbox_messages_live")
@@ -109,6 +115,7 @@ export function UnifiedInboxPage() {
       const conversationId = `conversation:${key}`;
       const displayName = row.user_name?.trim() || `${channel} ${shortExternalId(row.external_user_id)}`;
       const existing = grouped.get(key);
+      const sender = toMessageSender(row.sender);
 
       if (!existing) {
         grouped.set(key, {
@@ -135,14 +142,16 @@ export function UnifiedInboxPage() {
       }
 
       const bucket = grouped.get(key)!;
+      const currentName = bucket.customer.name;
+      if (row.user_name?.trim() && currentName.includes("…")) bucket.customer.name = row.user_name.trim();
       bucket.customer.lastActivity = at;
       bucket.conversation.lastMessage = row.text;
       bucket.conversation.updatedAt = at;
-      bucket.conversation.unread += 1;
+      if (sender === "customer") bucket.conversation.unread += 1;
       bucket.messages.push({
         id: `live-message:${row.id}`,
         conversationId,
-        sender: "customer",
+        sender,
         text: row.text || "(ไม่มีข้อความ)",
         at,
       });
@@ -159,12 +168,9 @@ export function UnifiedInboxPage() {
     };
   }, [liveRows, liveModes]);
 
-  const customers = useMemo(() => [...liveInbox.customers, ...storedCustomers], [liveInbox.customers, storedCustomers]);
-  const conversations = useMemo(
-    () => [...liveInbox.conversations, ...storedConversations],
-    [liveInbox.conversations, storedConversations],
-  );
-  const messages = useMemo(() => [...storedMessages, ...liveInbox.messages], [storedMessages, liveInbox.messages]);
+  const customers = liveInbox.customers;
+  const conversations = liveInbox.conversations;
+  const messages = liveInbox.messages;
 
   // Auto-select conversation from ?customer=ID (e.g. navigated from CRM)
   useEffect(() => {
@@ -192,23 +198,32 @@ export function UnifiedInboxPage() {
   const activeConv = conversations.find((c) => c.id === activeId);
   const activeCust = customers.find((c) => c.id === activeConv?.customerId);
   const thread = messages.filter((m) => m.conversationId === activeId);
-  const pref = prefs.find((p) => p.customerId === activeConv?.customerId);
-  const linkedInq = inquiries.find((i) => i.customerId === activeConv?.customerId);
   const toggleActiveMode = () => {
     if (!activeConv) return;
     const next = activeConv.mode === "ai" ? "admin" : "ai";
-    if (activeConv.id.startsWith("conversation:live:")) {
-      setLiveModes((modes) => ({ ...modes, [activeConv.id]: next }));
-      toast.success(next === "ai" ? "เปิด AI ตอบอัตโนมัติแล้ว" : "ปิด AI — Admin ครอบครอง");
-      return;
-    }
-    setConversationMode(activeConv.id, next);
+    setLiveModes((modes) => ({ ...modes, [activeConv.id]: next }));
+    toast.success(next === "ai" ? "เปิด AI ตอบอัตโนมัติแล้ว" : "ปิด AI — Admin ครอบครอง");
   };
 
-  const send = () => {
-    if (!text.trim() || !activeId) return;
-    addMessage(activeId, text);
+  const send = async () => {
+    if (!text.trim() || !activeId || !activeConv || !activeCust) return;
+    const messageText = text;
     setText("");
+    try {
+      await sendInboxMessage({
+        data: {
+          channel: activeConv.channel,
+          externalUserId: activeCust.phone ?? "",
+          userName: activeCust.name,
+          text: messageText,
+          sender: "admin",
+        },
+      });
+      toast.success("ส่งข้อความแล้ว");
+    } catch (e) {
+      setText(messageText);
+      toast.error(e instanceof Error ? e.message : "ส่งข้อความไม่สำเร็จ");
+    }
   };
 
   const aiProviders = useAppStore((s) => s.aiProviders);
@@ -233,7 +248,18 @@ export function UnifiedInboxPage() {
           messages: history,
         },
       });
-      addMessage(activeId, res.text || "(ไม่มีคำตอบ)", "ai");
+      const answer = res.text || "(ไม่มีคำตอบ)";
+      if (activeConv && activeCust?.phone) {
+        await sendInboxMessage({
+          data: {
+            channel: activeConv.channel,
+            externalUserId: activeCust.phone,
+            userName: activeCust.name,
+            text: answer,
+            sender: "ai",
+          },
+        });
+      }
       toast.success(`ตอบโดย ${res.provider}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "เรียก AI ไม่สำเร็จ");
@@ -381,7 +407,7 @@ export function UnifiedInboxPage() {
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()}
+            onKeyDown={(e) => e.key === "Enter" && void send()}
             placeholder="พิมพ์ตอบกลับ..."
             className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           />
@@ -392,7 +418,7 @@ export function UnifiedInboxPage() {
           >
             {aiLoading ? "AI..." : "ให้ AI ตอบ"}
           </ActionButton>
-          <ActionButton variant="primary" icon={<Send className="w-3.5 h-3.5" />} onClick={send}>ส่ง</ActionButton>
+          <ActionButton variant="primary" icon={<Send className="w-3.5 h-3.5" />} onClick={() => void send()}>ส่ง</ActionButton>
         </div>
       </section>
 
@@ -408,28 +434,12 @@ export function UnifiedInboxPage() {
           </div>
         </div>
 
-        {pref && (
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Heart className="w-3 h-3" /> Preference ที่ AI จับได้</div>
-            <div className="bg-background border border-border rounded-xl p-3 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">สนใจ</span><span>{pref.interestedItem} ({pref.interestedZone})</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">วันที่</span><span>{pref.preferredDateTime}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">งบ</span><span>{pref.budget.toLocaleString()} ฿</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Urgency</span><StatusBadge label={pref.urgency} variant={pref.urgency === "high" ? "danger" : "warning"} /></div>
-            </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Heart className="w-3 h-3" /> Live Thread</div>
+          <div className="bg-background border border-border rounded-xl p-3 space-y-1 text-xs text-muted-foreground">
+            อ่านจากตาราง inbox_messages แบบ realtime เท่านั้น ไม่มี local mock ในหน้านี้
           </div>
-        )}
-
-        {linkedInq && (
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Sparkles className="w-3 h-3" /> AI Inquiry ที่เชื่อมโยง</div>
-            <div className="bg-background border border-border rounded-xl p-3 text-xs">
-              <div className="font-medium">{linkedInq.id}</div>
-              <div className="text-muted-foreground mt-0.5">{linkedInq.interestedItem} / {linkedInq.interestedZone}</div>
-              <div className="mt-2"><StatusBadge label={linkedInq.status} variant="primary" /></div>
-            </div>
-          </div>
-        )}
+        </div>
 
         <ActionButton variant="outline" icon={<Link2 className="w-3 h-3" />} className="w-full justify-center">ดู Inquiry เต็มหน้าจอ</ActionButton>
       </aside>
