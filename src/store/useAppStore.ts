@@ -442,9 +442,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateChatIntegration: (id, patch) => {
     const next: Partial<ChatIntegration> = { ...patch };
-    if ((patch as { rawToken?: string }).rawToken) {
-      next.maskedToken = mask((patch as { rawToken?: string }).rawToken!);
-      delete (next as { rawToken?: string }).rawToken;
+    const raw = (patch as { rawToken?: string }).rawToken;
+    if (raw) {
+      next.maskedToken = mask(raw);
+      next.rawToken = raw;
     }
     set((s) => ({ chatIntegrations: s.chatIntegrations.map((c) => (c.id === id ? { ...c, ...next } : c)) }));
     get().audit("update_chat_integration", id);
@@ -485,9 +486,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateAIProvider: (id, patch) => {
     const next: Partial<AIProvider> = { ...patch };
-    if ((patch as { rawKey?: string }).rawKey) {
-      next.maskedKey = mask((patch as { rawKey?: string }).rawKey!);
-      delete (next as { rawKey?: string }).rawKey;
+    const raw = (patch as { rawKey?: string }).rawKey;
+    if (raw) {
+      next.maskedKey = mask(raw);
+      next.rawKey = raw;
     }
     set((s) => ({ aiProviders: s.aiProviders.map((p) => (p.id === id ? { ...p, ...next } : p)) }));
     get().audit("update_ai_provider", id);
