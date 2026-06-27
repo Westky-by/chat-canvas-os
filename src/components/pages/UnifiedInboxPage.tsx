@@ -5,6 +5,7 @@ import { ActionButton } from "@/components/common/ActionButton";
 import { RelativeTime } from "@/components/common/RelativeTime";
 import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2, Filter, X, Loader2 } from "lucide-react";
 import { aiReply } from "@/lib/aiReply.functions";
+import { sendInboxMessage, syncLineProfiles } from "@/lib/inbox.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Channel, Conversation, Customer, Message } from "@/types";
@@ -77,6 +78,11 @@ export function UnifiedInboxPage() {
     };
 
     loadInbox();
+    syncLineProfiles()
+      .then((res) => {
+        if (res.updated > 0) void loadInbox();
+      })
+      .catch(() => undefined);
     const poll = window.setInterval(loadInbox, 8000);
     const channel = supabase
       .channel("inbox_messages_live")
@@ -205,10 +211,29 @@ export function UnifiedInboxPage() {
     setConversationMode(activeConv.id, next);
   };
 
-  const send = () => {
-    if (!text.trim() || !activeId) return;
-    addMessage(activeId, text);
+  const send = async () => {
+    if (!text.trim() || !activeId || !activeConv || !activeCust) return;
+    const messageText = text;
     setText("");
+    try {
+      if (activeConv.id.startsWith("conversation:live:")) {
+        await sendInboxMessage({
+          data: {
+            channel: activeConv.channel,
+            externalUserId: activeCust.phone ?? "",
+            userName: activeCust.name,
+            text: messageText,
+            sender: "admin",
+          },
+        });
+        toast.success("ส่งข้อความแล้ว");
+        return;
+      }
+      addMessage(activeId, messageText);
+    } catch (e) {
+      setText(messageText);
+      toast.error(e instanceof Error ? e.message : "ส่งข้อความไม่สำเร็จ");
+    }
   };
 
   const aiProviders = useAppStore((s) => s.aiProviders);
@@ -233,7 +258,20 @@ export function UnifiedInboxPage() {
           messages: history,
         },
       });
-      addMessage(activeId, res.text || "(ไม่มีคำตอบ)", "ai");
+      const answer = res.text || "(ไม่มีคำตอบ)";
+      if (activeConv?.id.startsWith("conversation:live:") && activeCust?.phone) {
+        await sendInboxMessage({
+          data: {
+            channel: activeConv.channel,
+            externalUserId: activeCust.phone,
+            userName: activeCust.name,
+            text: answer,
+            sender: "ai",
+          },
+        });
+      } else {
+        addMessage(activeId, answer, "ai");
+      }
       toast.success(`ตอบโดย ${res.provider}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "เรียก AI ไม่สำเร็จ");
@@ -381,7 +419,7 @@ export function UnifiedInboxPage() {
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()}
+            onKeyDown={(e) => e.key === "Enter" && void send()}
             placeholder="พิมพ์ตอบกลับ..."
             className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           />
@@ -392,7 +430,7 @@ export function UnifiedInboxPage() {
           >
             {aiLoading ? "AI..." : "ให้ AI ตอบ"}
           </ActionButton>
-          <ActionButton variant="primary" icon={<Send className="w-3.5 h-3.5" />} onClick={send}>ส่ง</ActionButton>
+          <ActionButton variant="primary" icon={<Send className="w-3.5 h-3.5" />} onClick={() => void send()}>ส่ง</ActionButton>
         </div>
       </section>
 
