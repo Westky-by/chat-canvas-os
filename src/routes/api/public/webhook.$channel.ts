@@ -3,9 +3,6 @@
 // Bypasses Lovable site auth (per /api/public/* convention).
 // Normalizes inbound messages, stores them, and replies on supported channels.
 import { createFileRoute } from "@tanstack/react-router";
-import { createHmac, timingSafeEqual } from "crypto";
-import { generateText } from "ai";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 type NormalizedMessage = {
   channel: string;
@@ -20,16 +17,27 @@ type NormalizedMessage = {
 const jsonHeaders = { "Content-Type": "application/json" };
 
 function safeEqual(a: string, b: string) {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i += 1) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
 }
 
-function verifyLineSignature(rawBody: string, signature: string | null) {
+function toBase64(bytes: ArrayBuffer) {
+  let binary = "";
+  for (const byte of new Uint8Array(bytes)) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+async function verifyLineSignature(rawBody: string, signature: string | null) {
   const secret = process.env.LINE_CHANNEL_SECRET;
   if (!secret) return { ok: true, skipped: true };
   if (!signature) return { ok: false, skipped: false };
-  const expected = createHmac("sha256", secret).update(rawBody).digest("base64");
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+  ]);
+  const expected = toBase64(await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody)));
   return { ok: safeEqual(signature, expected), skipped: false };
 }
 
@@ -142,6 +150,10 @@ async function createAiText(message: NormalizedMessage) {
     return "ตอนนี้ระบบ AI ยังไม่พร้อมใช้งาน ทีมงานจะติดต่อกลับโดยเร็วที่สุดครับ";
   }
 
+  const [{ generateText }, { createLovableAiGatewayProvider }] = await Promise.all([
+    import("ai"),
+    import("@/lib/ai-gateway.server"),
+  ]);
   const gateway = createLovableAiGatewayProvider(key);
   const result = await generateText({
     model: gateway("google/gemini-2.5-flash-lite"),
@@ -218,7 +230,7 @@ export const Route = createFileRoute("/api/public/webhook/$channel")({
         const channel = params.channel.toLowerCase();
         const rawBody = await request.text();
         if (channel === "line") {
-          const signature = verifyLineSignature(rawBody, request.headers.get("x-line-signature"));
+          const signature = await verifyLineSignature(rawBody, request.headers.get("x-line-signature"));
           if (!signature.ok) {
             console.warn("[webhook:line] invalid signature");
             return new Response(JSON.stringify({ ok: false, error: "invalid_line_signature" }), {
