@@ -183,19 +183,26 @@ function ProviderForm({
       </div>
 
       <div>
-        <label className="text-xs font-medium text-foreground">System Prompt</label>
-        <textarea
-          value={systemPrompt}
-          onChange={(e) => setSystemPrompt(e.target.value)}
-          rows={6}
-          placeholder="อธิบายตัวตนของผู้ช่วย AI เช่น ชื่อร้าน เมนู เวลาเปิด-ปิด ที่อยู่ ฯลฯ"
-          className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono leading-relaxed"
+        <label className="text-xs font-medium text-foreground flex items-center gap-1">
+          <Bell className="w-3 h-3 text-primary" /> Owner LINE ID — สำหรับ AI ทักหาเจ้าของ
+        </label>
+        <input
+          type="text"
+          value={ownerLineId}
+          onChange={(e) => setOwnerLineId(e.target.value)}
+          placeholder="เช่น U1234abcd... (LINE User ID) หรือ C... (Group ID)"
+          className="mt-1 w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono"
         />
+        <p className="text-[10px] text-muted-foreground mt-1">
+          เมื่อ AI พบรายละเอียดที่ต้องให้เจ้าของติดต่อลูกค้า ระบบจะส่งข้อความเข้า LINE ID นี้ผ่าน LINE OA ที่ตั้งไว้ใน Chat Integrations · ผูกกับเมนู <span className="text-primary">Owner Notifications</span> โดยอัตโนมัติ
+        </p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <ActionButton icon={<Bell className="w-3 h-3" />} onClick={testNotify}>ทดสอบแจ้ง Owner</ActionButton>
         <ActionButton variant="primary" icon={<Save className="w-3 h-3" />} onClick={save}>บันทึก</ActionButton>
       </div>
     </div>
   );
 }
+
