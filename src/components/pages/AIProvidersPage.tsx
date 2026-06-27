@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { Sparkles, Zap, Save, Plus, Trash2, ShieldAlert } from "lucide-react";
+import { Sparkles, Zap, Save, Plus, Trash2, ShieldAlert, Bell } from "lucide-react";
 import { toast } from "sonner";
 import type { AIProvider } from "@/types";
 
