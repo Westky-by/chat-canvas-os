@@ -17,6 +17,7 @@ export function UnifiedInboxPage() {
   const prefs = useAppStore((s) => s.customerPreferences);
   const inquiries = useAppStore((s) => s.inquiries);
   const addMessage = useAppStore((s) => s.addMessage);
+  const setConversationMode = useAppStore((s) => s.setConversationMode);
 
   const [activeId, setActiveId] = useState(conversations[0]?.id ?? "");
   const [text, setText] = useState("");
