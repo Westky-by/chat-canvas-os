@@ -201,7 +201,7 @@ async function persist(messages: NormalizedMessage[]) {
   }
 }
 
-async function persistOutbound(message: NormalizedMessage, text: string, status: "sent" | "failed") {
+async function persistOutbound(message: NormalizedMessage, text: string, status: "sent" | "failed" | "skipped") {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("inbox_messages").insert({
@@ -251,7 +251,7 @@ async function replyToLine(message: NormalizedMessage) {
     return { ok: false, status: 500, error: "missing_line_token" };
   }
   if (integration.status && integration.status !== "connected") {
-    await persistOutbound(message, "AI reply skipped: LINE integration is disabled", "skipped" as never);
+    await persistOutbound(message, "AI reply skipped: LINE integration is disabled", "skipped");
     return { ok: true, status: 200, skipped: "integration_disabled" };
   }
   if (!message.replyToken) {
