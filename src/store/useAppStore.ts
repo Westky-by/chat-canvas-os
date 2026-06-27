@@ -90,7 +90,18 @@ interface AppState {
   cancelBooking: (id: string) => void;
   addMessage: (conversationId: string, text: string, sender?: Message["sender"]) => void;
   sendCustomerMessageDemo: (text: string) => void;
+  updateChatIntegration: (id: string, patch: Partial<ChatIntegration>) => void;
+  addChatIntegration: (patch: Partial<ChatIntegration>) => void;
+  deleteChatIntegration: (id: string) => void;
+  updateAIProvider: (id: string, patch: Partial<AIProvider>) => void;
+  addAIProvider: (patch: Partial<AIProvider>) => void;
+  deleteAIProvider: (id: string) => void;
+  updateNotificationRule: (id: string, patch: Partial<NotificationRule>) => void;
+  addNotificationRule: (patch: Partial<NotificationRule>) => void;
+  deleteNotificationRule: (id: string) => void;
 }
+
+const mask = (raw: string) => (raw.length <= 4 ? "••••" : `•••• ${raw.slice(-4)}`);
 
 export const useAppStore = create<AppState>((set, get) => ({
   customers: [...seed.customers],
@@ -425,5 +436,109 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!conv) return;
     get().addMessage(conv.id, text, "customer");
     toast.info(`ลูกค้าส่ง: "${text}"`);
+  },
+
+  updateChatIntegration: (id, patch) => {
+    const next: Partial<ChatIntegration> = { ...patch };
+    if ((patch as { rawToken?: string }).rawToken) {
+      next.maskedToken = mask((patch as { rawToken?: string }).rawToken!);
+      delete (next as { rawToken?: string }).rawToken;
+    }
+    set((s) => ({ chatIntegrations: s.chatIntegrations.map((c) => (c.id === id ? { ...c, ...next } : c)) }));
+    get().audit("update_chat_integration", id);
+    toast.success("บันทึกการตั้งค่า channel แล้ว");
+  },
+  addChatIntegration: (patch) => {
+    const id = nid("CH");
+    const raw = (patch as { rawToken?: string }).rawToken;
+    set((s) => ({
+      chatIntegrations: [
+        {
+          id,
+          name: patch.name ?? "Custom Webhook",
+          status: patch.status ?? "disconnected",
+          webhookUrl: patch.webhookUrl ?? `https://api.example.com/webhook/${id}`,
+          maskedToken: raw ? mask(raw) : patch.maskedToken ?? "•••• ••••",
+          lastSync: patch.lastSync,
+          lastMessage: patch.lastMessage,
+          error: patch.error,
+        },
+        ...s.chatIntegrations,
+      ],
+    }));
+    get().audit("add_chat_integration", id);
+    toast.success(`เพิ่มช่องทาง ${patch.name ?? "Custom"} แล้ว`);
+  },
+  deleteChatIntegration: (id) => {
+    set((s) => ({ chatIntegrations: s.chatIntegrations.filter((c) => c.id !== id) }));
+    get().audit("delete_chat_integration", id);
+    toast.warning("ลบช่องทางแล้ว");
+  },
+
+  updateAIProvider: (id, patch) => {
+    const next: Partial<AIProvider> = { ...patch };
+    if ((patch as { rawKey?: string }).rawKey) {
+      next.maskedKey = mask((patch as { rawKey?: string }).rawKey!);
+      delete (next as { rawKey?: string }).rawKey;
+    }
+    set((s) => ({ aiProviders: s.aiProviders.map((p) => (p.id === id ? { ...p, ...next } : p)) }));
+    get().audit("update_ai_provider", id);
+    toast.success("บันทึก provider แล้ว");
+  },
+  addAIProvider: (patch) => {
+    const id = nid("AI");
+    const raw = (patch as { rawKey?: string }).rawKey;
+    set((s) => ({
+      aiProviders: [
+        {
+          id,
+          name: patch.name ?? "Custom",
+          status: patch.status ?? "disabled",
+          model: patch.model ?? "default",
+          maskedKey: raw ? mask(raw) : patch.maskedKey ?? "•••• ••••",
+          role: patch.role ?? "manual",
+          costLimit: patch.costLimit ?? 1000,
+          lastTested: patch.lastTested,
+        },
+        ...s.aiProviders,
+      ],
+    }));
+    get().audit("add_ai_provider", id);
+    toast.success(`เพิ่ม provider ${patch.name ?? "Custom"} แล้ว`);
+  },
+  deleteAIProvider: (id) => {
+    set((s) => ({ aiProviders: s.aiProviders.filter((p) => p.id !== id) }));
+    get().audit("delete_ai_provider", id);
+    toast.warning("ลบ provider แล้ว");
+  },
+
+  updateNotificationRule: (id, patch) => {
+    set((s) => ({ notificationRules: s.notificationRules.map((r) => (r.id === id ? { ...r, ...patch } : r)) }));
+    get().audit("update_notification_rule", id);
+    toast.success("บันทึกกฎแล้ว");
+  },
+  addNotificationRule: (patch) => {
+    const id = nid("NR");
+    set((s) => ({
+      notificationRules: [
+        {
+          id,
+          trigger: patch.trigger ?? "custom_event",
+          channel: patch.channel ?? "LINE",
+          template: patch.template ?? "",
+          enabled: patch.enabled ?? true,
+          priority: patch.priority ?? "medium",
+          lastSent: patch.lastSent,
+        },
+        ...s.notificationRules,
+      ],
+    }));
+    get().audit("add_notification_rule", id);
+    toast.success("เพิ่มกฎใหม่แล้ว");
+  },
+  deleteNotificationRule: (id) => {
+    set((s) => ({ notificationRules: s.notificationRules.filter((r) => r.id !== id) }));
+    get().audit("delete_notification_rule", id);
+    toast.warning("ลบกฎแล้ว");
   },
 }));
