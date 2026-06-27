@@ -17,7 +17,7 @@ export function ProviderCard({
   model: string;
   maskedKey: string;
   role: "primary" | "fallback" | "manual";
-  lastTested?: React.ReactNode;
+  lastTested?: ReactNode;
   costLimit: number;
   actions?: ReactNode;
   icon?: ReactNode;
@@ -45,7 +45,7 @@ export function ProviderCard({
   );
 }
 
-function Field({ label, value }: { label: string; value: React.ReactNode }) {
+function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <div className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</div>
