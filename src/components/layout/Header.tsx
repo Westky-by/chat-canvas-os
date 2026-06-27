@@ -1,7 +1,6 @@
-import { Bell, Search, HelpCircle, User, LogOut, RotateCcw } from "lucide-react";
+import { Bell, Search, HelpCircle, User, LogOut } from "lucide-react";
 import { useRouterState, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useAppStore } from "@/store/useAppStore";
 import { toast } from "sonner";
 
 
@@ -9,7 +8,6 @@ export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const resetAll = useAppStore((s) => s.resetAll);
   const title = labelFor(pathname);
 
   async function handleLogout() {
@@ -18,11 +16,6 @@ export function Header() {
     navigate({ to: "/auth" });
   }
 
-  function handleReset() {
-    if (confirm("ต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น (Default)?\nการแก้ไข/เพิ่ม/ลบทั้งหมดในเซสชันนี้จะหายไป")) {
-      resetAll();
-    }
-  }
 
 
 
