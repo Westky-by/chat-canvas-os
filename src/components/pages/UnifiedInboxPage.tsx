@@ -3,7 +3,9 @@ import { useAppStore } from "@/store/useAppStore";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { RelativeTime } from "@/components/common/RelativeTime";
-import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2, Filter, X } from "lucide-react";
+import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2, Filter, X, Loader2 } from "lucide-react";
+import { aiReply } from "@/lib/aiReply.functions";
+import { toast } from "sonner";
 
 const ALL_CHANNELS = ["LINE", "Telegram", "Facebook Messenger", "Instagram", "WhatsApp", "Web Chat"] as const;
 
@@ -39,6 +41,38 @@ export function UnifiedInboxPage() {
     addMessage(activeId, text);
     setText("");
   };
+
+  const aiProviders = useAppStore((s) => s.aiProviders);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const generateAIReply = async () => {
+    if (!activeId || thread.length === 0) return;
+    const primary = aiProviders.find((p) => p.role === "primary" && p.status === "active") ?? aiProviders[0];
+    if (!primary) return toast.error("ยังไม่มี AI Provider — ตั้งค่าใน Integrations → AI API Providers");
+    setAiLoading(true);
+    try {
+      const history = thread.slice(-12).map((m) => ({
+        role: (m.sender === "customer" ? "user" : "assistant") as "user" | "assistant",
+        content: m.text,
+      }));
+      const res = await aiReply({
+        data: {
+          provider: primary.providerLabel,
+          model: primary.model,
+          systemPrompt: primary.systemPrompt,
+          userApiKey: primary.rawKey,
+          messages: history,
+        },
+      });
+      addMessage(activeId, res.text || "(ไม่มีคำตอบ)", "ai");
+      toast.success(`ตอบโดย ${res.provider}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "เรียก AI ไม่สำเร็จ");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
 
   return (
     <div className="h-full grid grid-cols-[280px_1fr_320px] divide-x divide-border">
