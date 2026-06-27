@@ -101,13 +101,17 @@ export const routes: RouteRecord[] = [
 ];
 
 export const aiProviders: AIProvider[] = [
-  { id: "AI001", name: "Gemini", status: "active", model: "gemini-2.0-flash", maskedKey: "AIza••••••••3xK9", role: "primary", lastTested: ago(60), costLimit: 5000 },
-  { id: "AI002", name: "OpenAI", status: "active", model: "gpt-4o", maskedKey: "sk-••••••••pQ2x", role: "fallback", lastTested: ago(120), costLimit: 3000 },
-  { id: "AI003", name: "Claude", status: "disabled", model: "claude-sonnet-4", maskedKey: "sk-ant-••••aBc1", role: "manual", costLimit: 2000 },
-  { id: "AI004", name: "Grok", status: "disabled", model: "grok-2", maskedKey: "—", role: "manual", costLimit: 0 },
-  { id: "AI005", name: "Vertex AI", status: "disabled", model: "gemini-pro-vertex", maskedKey: "—", role: "manual", costLimit: 0 },
-  { id: "AI006", name: "Custom", status: "disabled", model: "custom-llm-v1", maskedKey: "—", role: "manual", costLimit: 0 },
-  { id: "AI007", name: "OpenAI-Compatible", status: "disabled", model: "any", maskedKey: "—", role: "manual", costLimit: 0 },
+  {
+    id: "AI001",
+    name: "Gemini",
+    providerLabel: "Lovable AI / Google Gemini API",
+    status: "active",
+    model: "google/gemini-2.5-flash-lite",
+    maskedKey: "—",
+    role: "primary",
+    costLimit: 0,
+    systemPrompt: "คุณคือผู้ช่วย AI ของร้าน ตอบลูกค้าอย่างสุภาพ กระชับ และเป็นมิตร",
+  },
 ];
 
 export const chatIntegrations: ChatIntegration[] = [
