@@ -45,6 +45,7 @@ export function UnifiedInboxPage() {
   const setConversationMode = useAppStore((s) => s.setConversationMode);
 
   const [liveRows, setLiveRows] = useState<InboxRow[]>([]);
+  const [liveModes, setLiveModes] = useState<Record<string, Conversation["mode"]>>({});
   const [liveLoading, setLiveLoading] = useState(true);
   const [liveError, setLiveError] = useState("");
   const [activeId, setActiveId] = useState(storedConversations[0]?.id ?? "");
@@ -126,7 +127,7 @@ export function UnifiedInboxPage() {
             channel,
             lastMessage: row.text,
             unread: 0,
-            mode: "ai",
+            mode: liveModes[conversationId] ?? "ai",
             updatedAt: at,
           },
           messages: [],
@@ -156,7 +157,7 @@ export function UnifiedInboxPage() {
       conversations: buckets.map((b) => b.conversation),
       messages: buckets.flatMap((b) => b.messages),
     };
-  }, [liveRows]);
+  }, [liveRows, liveModes]);
 
   const customers = useMemo(() => [...liveInbox.customers, ...storedCustomers], [liveInbox.customers, storedCustomers]);
   const conversations = useMemo(
@@ -193,6 +194,16 @@ export function UnifiedInboxPage() {
   const thread = messages.filter((m) => m.conversationId === activeId);
   const pref = prefs.find((p) => p.customerId === activeConv?.customerId);
   const linkedInq = inquiries.find((i) => i.customerId === activeConv?.customerId);
+  const toggleActiveMode = () => {
+    if (!activeConv) return;
+    const next = activeConv.mode === "ai" ? "admin" : "ai";
+    if (activeConv.id.startsWith("conversation:live:")) {
+      setLiveModes((modes) => ({ ...modes, [activeConv.id]: next }));
+      toast.success(next === "ai" ? "เปิด AI ตอบอัตโนมัติแล้ว" : "ปิด AI — Admin ครอบครอง");
+      return;
+    }
+    setConversationMode(activeConv.id, next);
+  };
 
   const send = () => {
     if (!text.trim() || !activeId) return;
@@ -319,7 +330,7 @@ export function UnifiedInboxPage() {
               type="button"
               role="switch"
               aria-checked={activeConv.mode === "ai"}
-              onClick={() => setConversationMode(activeConv.id, activeConv.mode === "ai" ? "admin" : "ai")}
+              onClick={toggleActiveMode}
               className={`group flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition ${
                 activeConv.mode === "ai"
                   ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15"
