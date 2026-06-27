@@ -4,7 +4,7 @@ import { ActionButton } from "@/components/common/ActionButton";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { useAppStore } from "@/store/useAppStore";
 import { Send } from "lucide-react";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 
 const eventTypes = [
   "customer_message", "live_cf_comment", "booking_request", "payment_slip_upload",
@@ -58,7 +58,7 @@ export function WebhookTesterPage() {
                 <StatusBadge label={l.status} variant={l.status === "ok" ? "success" : "danger"} />
                 <span className="font-mono">{l.event}</span>
               </div>
-              <span className="text-muted-foreground">{fmtRelative(l.at)}</span>
+              <span className="text-muted-foreground">{<RelativeTime iso={l.at} />}</span>
             </div>
           ))}
         </div>

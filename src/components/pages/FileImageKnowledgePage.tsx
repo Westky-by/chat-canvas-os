@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { Upload, FileText, CheckCircle, X, Archive, Eye, AlertTriangle } from "lucide-react";
 
 export function FileImageKnowledgePage() {
@@ -27,7 +27,7 @@ export function FileImageKnowledgePage() {
             <div className="w-9 h-9 rounded-lg bg-surface-elevated flex items-center justify-center"><FileText className="w-4 h-4 text-primary" /></div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium truncate">{f.name}</div>
-              <div className="text-[11px] text-muted-foreground">{f.category} • {f.uploadedBy} • {fmtRelative(f.uploadedAt)}</div>
+              <div className="text-[11px] text-muted-foreground">{f.category} • {f.uploadedBy} • {<RelativeTime iso={f.uploadedAt} />}</div>
             </div>
             <StatusBadge label={f.usedByAI ? "AI ใช้อยู่" : "ยังไม่ใช้"} variant={f.usedByAI ? "success" : "muted"} />
             <div className="flex gap-1">

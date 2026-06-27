@@ -3,7 +3,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { useAppStore } from "@/store/useAppStore";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2 } from "lucide-react";
 
 export function UnifiedInboxPage() {
@@ -50,7 +50,7 @@ export function UnifiedInboxPage() {
               </div>
               <div className="text-[11px] text-muted-foreground truncate mt-1">{c.lastMessage}</div>
               <div className="text-[10px] text-muted-foreground mt-1 flex items-center justify-between">
-                <span>{fmtRelative(c.updatedAt)}</span>
+                <span>{<RelativeTime iso={c.updatedAt} />}</span>
                 {c.mode === "ai" ? <span className="flex items-center gap-1 text-primary"><Bot className="w-3 h-3" />AI</span> : <span className="flex items-center gap-1 text-warning"><User className="w-3 h-3" />Admin</span>}
               </div>
             </button>
@@ -86,7 +86,7 @@ export function UnifiedInboxPage() {
                       <CatalogCardMini key={i} item={catalog.find((c) => c.id === a.catalogId)} />
                     ) : null
                   )}
-                  <div className="text-[10px] text-muted-foreground">{fmtRelative(m.at)} • {m.sender}</div>
+                  <div className="text-[10px] text-muted-foreground">{<RelativeTime iso={m.at} />} • {m.sender}</div>
                 </div>
               </div>
             );

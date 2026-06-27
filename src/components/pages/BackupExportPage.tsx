@@ -1,8 +1,9 @@
+import React from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ActionButton } from "@/components/common/ActionButton";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import { Cloud, HardDrive, Download, Play, Database, FileText, AlertTriangle } from "lucide-react";
 
 export function BackupExportPage() {
@@ -33,7 +34,7 @@ export function BackupExportPage() {
               <StatusBadge label={j.status} variant="success" />
             </div>
             <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <Info label="Last backup" value={fmtRelative(j.lastBackup)} />
+              <Info label="Last backup" value={<RelativeTime iso={j.lastBackup} />} />
               <Info label="Size" value={j.size} />
               <Info label="Retention" value={j.retention} />
               <Info label="Next schedule" value={j.nextSchedule} />
@@ -64,7 +65,7 @@ export function BackupExportPage() {
   );
 }
 
-const Info = ({ label, value }: { label: string; value: string }) => (
+const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="bg-background rounded-lg px-2 py-1.5">
     <div className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</div>
     <div className="text-xs font-medium mt-0.5">{value}</div>

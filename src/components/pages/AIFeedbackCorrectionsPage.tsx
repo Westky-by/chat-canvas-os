@@ -4,7 +4,7 @@ import { DataTable, type Column } from "@/components/common/DataTable";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtRelative } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 import type { AIFeedback } from "@/types";
 import { Check, X, Save } from "lucide-react";
 import { Modal } from "@/components/common/Modal";
@@ -21,7 +21,7 @@ export function AIFeedbackCorrectionsPage() {
     { key: "correction", header: "การแก้ไข", render: (r) => r.correction ?? "—" },
     { key: "status", header: "สถานะ", render: (r) => <StatusBadge label={r.status} variant={r.status === "correct" ? "success" : r.status === "wrong" ? "danger" : r.status === "saved" ? "primary" : "warning"} /> },
     { key: "confidence", header: "Conf.", render: (r) => `${(r.confidence * 100).toFixed(0)}%` },
-    { key: "createdAt", header: "เมื่อ", render: (r) => fmtRelative(r.createdAt) },
+    { key: "createdAt", header: "เมื่อ", render: (r) => <RelativeTime iso={r.createdAt} /> },
     {
       key: "actions",
       header: "Actions",

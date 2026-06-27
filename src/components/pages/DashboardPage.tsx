@@ -4,7 +4,8 @@ import { ActionButton } from "@/components/common/ActionButton";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Sparkles, Calendar, DollarSign, Brain, Bell, Play } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { fmtTHB, fmtRelative } from "@/utils/formatters";
+import { fmtTHB } from "@/utils/formatters";
+import { RelativeTime } from "@/components/common/RelativeTime";
 
 export function DashboardPage() {
   const inquiries = useAppStore((s) => s.inquiries);
@@ -68,7 +69,7 @@ export function DashboardPage() {
                 <div className="text-xs">{n.message}</div>
                 <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
                   <StatusBadge label={n.channel} variant="info" />
-                  {fmtRelative(n.at)}
+                  {<RelativeTime iso={n.at} />}
                 </div>
               </div>
             ))}
