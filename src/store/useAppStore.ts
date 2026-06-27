@@ -71,6 +71,7 @@ interface AppState {
   setPrimaryAI: (id: string) => void;
   testChatWebhook: (id: string) => void;
   toggleChannelConnection: (id: string) => void;
+  setConversationMode: (id: string, mode: "ai" | "admin") => void;
   sendWebhookEvent: (event: string, payload: string) => void;
   testOwnerNotification: (ruleId: string) => void;
   toggleRule: (ruleId: string) => void;
@@ -434,6 +435,14 @@ export const useAppStore = create<AppState>()(
       messages: [...s.messages, { id: nid("M"), conversationId, sender, text, at: now() }],
       conversations: s.conversations.map((c) => (c.id === conversationId ? { ...c, lastMessage: text, updatedAt: now() } : c)),
     }));
+  },
+
+  setConversationMode: (id, mode) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) => (c.id === id ? { ...c, mode } : c)),
+    }));
+    get().audit("Conversation Mode", `${id} → ${mode === "ai" ? "AI ตอบอัตโนมัติ" : "Admin ครอบครอง"}`);
+    toast.success(mode === "ai" ? "เปิด AI ตอบอัตโนมัติแล้ว" : "ปิด AI — Admin ครอบครอง");
   },
 
   sendCustomerMessageDemo: (text) => {

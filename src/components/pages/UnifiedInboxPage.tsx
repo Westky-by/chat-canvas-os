@@ -17,6 +17,7 @@ export function UnifiedInboxPage() {
   const prefs = useAppStore((s) => s.customerPreferences);
   const inquiries = useAppStore((s) => s.inquiries);
   const addMessage = useAppStore((s) => s.addMessage);
+  const setConversationMode = useAppStore((s) => s.setConversationMode);
 
   const [activeId, setActiveId] = useState(conversations[0]?.id ?? "");
   const [text, setText] = useState("");
@@ -153,11 +154,34 @@ export function UnifiedInboxPage() {
             <div className="text-sm font-semibold">{activeCust?.name}</div>
             <div className="text-[11px] text-muted-foreground">{activeConv?.channel} • {activeCust?.phone}</div>
           </div>
-          <StatusBadge
-            label={activeConv?.mode === "ai" ? "AI กำลังตอบ" : "Admin ครอบครอง"}
-            variant={activeConv?.mode === "ai" ? "primary" : "warning"}
-            icon={activeConv?.mode === "ai" ? <Bot className="w-3 h-3" /> : <User className="w-3 h-3" />}
-          />
+          {activeConv && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={activeConv.mode === "ai"}
+              onClick={() => setConversationMode(activeConv.id, activeConv.mode === "ai" ? "admin" : "ai")}
+              className={`group flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition ${
+                activeConv.mode === "ai"
+                  ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15"
+                  : "border-warning/40 bg-warning/10 text-warning hover:bg-warning/15"
+              }`}
+              title={activeConv.mode === "ai" ? "คลิกเพื่อปิด AI (Admin ครอบครอง)" : "คลิกเพื่อเปิดให้ AI ตอบอัตโนมัติ"}
+            >
+              {activeConv.mode === "ai" ? <Bot className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
+              <span>{activeConv.mode === "ai" ? "AI: เปิด" : "AI: ปิด"}</span>
+              <span
+                className={`relative inline-flex h-4 w-7 items-center rounded-full transition ${
+                  activeConv.mode === "ai" ? "bg-primary" : "bg-muted-foreground/40"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition ${
+                    activeConv.mode === "ai" ? "translate-x-3.5" : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
