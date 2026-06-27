@@ -453,14 +453,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   addChatIntegration: (patch) => {
     const id = nid("CH");
     const raw = (patch as { rawToken?: string }).rawToken;
+    const channelType = (patch.channelType ?? "CUSTOM") as ChatIntegration["channelType"];
+    const inboundPath = patch.inboundPath ?? `/api/public/webhook/${channelType.toLowerCase()}`;
     set((s) => ({
       chatIntegrations: [
         {
           id,
           name: patch.name ?? "Custom Webhook",
+          channelType,
           status: patch.status ?? "disconnected",
-          webhookUrl: patch.webhookUrl ?? `https://api.example.com/webhook/${id}`,
-          maskedToken: raw ? mask(raw) : patch.maskedToken ?? "•••• ••••",
+          inboundPath,
+          sendEndpoint: patch.sendEndpoint ?? "",
+          webhookUrl: patch.webhookUrl ?? inboundPath,
+          maskedToken: raw ? mask(raw) : patch.maskedToken ?? "—",
+          rawToken: raw,
           lastSync: patch.lastSync,
           lastMessage: patch.lastMessage,
           error: patch.error,

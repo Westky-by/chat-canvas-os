@@ -111,13 +111,13 @@ export const aiProviders: AIProvider[] = [
 ];
 
 export const chatIntegrations: ChatIntegration[] = [
-  { id: "CH001", name: "LINE OA", status: "connected", webhookUrl: "https://api.example.com/webhooks/line", maskedToken: "Bearer ••••a1b2", lastSync: ago(2), lastMessage: ago(5) },
-  { id: "CH002", name: "Telegram", status: "connected", webhookUrl: "https://api.example.com/webhooks/tg", maskedToken: "•••• 8842:ABc", lastSync: ago(10), lastMessage: ago(30) },
-  { id: "CH003", name: "Facebook Messenger", status: "connected", webhookUrl: "https://api.example.com/webhooks/fb", maskedToken: "EAAB••••xyz", lastSync: ago(15), lastMessage: ago(45) },
-  { id: "CH004", name: "Instagram DM", status: "error", webhookUrl: "https://api.example.com/webhooks/ig", maskedToken: "IGQV••••pqr", error: "Token expired" },
-  { id: "CH005", name: "WhatsApp Business", status: "disconnected", webhookUrl: "—", maskedToken: "—" },
-  { id: "CH006", name: "Website Live Chat", status: "connected", webhookUrl: "https://api.example.com/webhooks/web", maskedToken: "•••• wsk_22" },
-  { id: "CH007", name: "Custom Webhook", status: "disconnected", webhookUrl: "—", maskedToken: "—" },
+  { id: "CH001", name: "LINE OA", channelType: "LINE", status: "disconnected", inboundPath: "/api/public/webhook/line", sendEndpoint: "https://api.line.me/v2/bot/message/reply", webhookUrl: "/api/public/webhook/line", maskedToken: "—" },
+  { id: "CH002", name: "Telegram", channelType: "TELEGRAM", status: "disconnected", inboundPath: "/api/public/webhook/telegram", sendEndpoint: "https://api.telegram.org/bot<TOKEN>/sendMessage", webhookUrl: "/api/public/webhook/telegram", maskedToken: "—" },
+  { id: "CH003", name: "Facebook Messenger", channelType: "MESSENGER", status: "disconnected", inboundPath: "/api/public/webhook/messenger", sendEndpoint: "https://graph.facebook.com/v20.0/me/messages", webhookUrl: "/api/public/webhook/messenger", maskedToken: "—" },
+  { id: "CH004", name: "Instagram DM", channelType: "INSTAGRAM", status: "disconnected", inboundPath: "/api/public/webhook/instagram", sendEndpoint: "https://graph.facebook.com/v20.0/me/messages", webhookUrl: "/api/public/webhook/instagram", maskedToken: "—" },
+  { id: "CH005", name: "WhatsApp Business", channelType: "WHATSAPP", status: "disconnected", inboundPath: "/api/public/webhook/whatsapp", sendEndpoint: "https://graph.facebook.com/v20.0/<PHONE_NUMBER_ID>/messages", webhookUrl: "/api/public/webhook/whatsapp", maskedToken: "—" },
+  { id: "CH006", name: "Website Live Chat", channelType: "WEB", status: "disconnected", inboundPath: "/api/public/webhook/web", sendEndpoint: "", webhookUrl: "/api/public/webhook/web", maskedToken: "—" },
+  { id: "CH007", name: "Custom Webhook", channelType: "CUSTOM", status: "disconnected", inboundPath: "/api/public/webhook/custom", sendEndpoint: "", webhookUrl: "/api/public/webhook/custom", maskedToken: "—" },
 ];
 
 export const webhookTestLogs: WebhookTestLog[] = [
