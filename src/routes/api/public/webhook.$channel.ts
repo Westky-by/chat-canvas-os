@@ -103,7 +103,7 @@ async function persist(messages: NormalizedMessage[]) {
       external_user_id: m.externalUserId,
       user_name: m.userName ?? null,
       text: m.text,
-      raw: m.raw as object,
+      raw: m.raw as never,
       received_at: m.receivedAt,
     }));
     const { error } = await supabaseAdmin.from("inbox_messages").insert(rows);
