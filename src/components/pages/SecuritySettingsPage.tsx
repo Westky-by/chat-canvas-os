@@ -68,6 +68,32 @@ export function SecuritySettingsPage() {
           <input className="w-full bg-surface border border-border rounded px-3 py-1.5 text-xs font-mono" value={s.ipAllowlist.join(", ")} onChange={(e) => save({ ipAllowlist: e.target.value.split(",").map((x) => x.trim()) })} />
         </div>
       </div>
+
+      <div className="bg-surface border border-destructive/40 rounded-xl p-5 max-w-3xl mt-5">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldAlert className="w-4 h-4 text-destructive" />
+          <h3 className="text-sm font-semibold text-destructive">Danger Zone</h3>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-4">
+          การกระทำในส่วนนี้ไม่สามารถย้อนกลับได้ — เฉพาะ Owner ({OWNER_EMAIL}) เท่านั้นที่มีสิทธิ์
+        </p>
+        <div className="flex items-start justify-between gap-3 p-3 bg-background rounded-lg border border-border">
+          <div>
+            <div className="text-sm font-medium">รีเซ็ตข้อมูลทั้งหมดเป็นค่าเริ่มต้น</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              ล้างทุก slice (catalog, bookings, integrations, logs ฯลฯ) กลับเป็น mock seed
+            </div>
+          </div>
+          <button
+            onClick={handleReset}
+            disabled={!isOwner}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/10 text-destructive border border-destructive/30 hover:bg-destructive/20 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            title={isOwner ? "รีเซ็ตข้อมูล" : "ต้อง login เป็น Owner"}
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Reset All Data
+          </button>
+        </div>
+      </div>
     </PageContainer>
   );
 }
