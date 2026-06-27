@@ -9,61 +9,668 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppRoutePlannerRouteImport } from './routes/_app.route-planner'
+import { Route as AppInboxRouteImport } from './routes/_app.inbox'
+import { Route as AppCrmRouteImport } from './routes/_app.crm'
+import { Route as AppCampaignsRouteImport } from './routes/_app.campaigns'
+import { Route as AppSetupWorkspaceRouteImport } from './routes/_app.setup.workspace'
+import { Route as AppSetupLoginPreviewRouteImport } from './routes/_app.setup.login-preview'
+import { Route as AppSetupInviteRouteImport } from './routes/_app.setup.invite'
+import { Route as AppSalesSlipsRouteImport } from './routes/_app.sales.slips'
+import { Route as AppSalesProductsRouteImport } from './routes/_app.sales.products'
+import { Route as AppSalesOrdersRouteImport } from './routes/_app.sales.orders'
+import { Route as AppSalesBookingsRouteImport } from './routes/_app.sales.bookings'
+import { Route as AppLogsUsageRouteImport } from './routes/_app.logs.usage'
+import { Route as AppLogsErrorsRouteImport } from './routes/_app.logs.errors'
+import { Route as AppLogsAuditRouteImport } from './routes/_app.logs.audit'
+import { Route as AppIntegrationsWebhookRouteImport } from './routes/_app.integrations.webhook'
+import { Route as AppIntegrationsNotificationsRouteImport } from './routes/_app.integrations.notifications'
+import { Route as AppIntegrationsChatRouteImport } from './routes/_app.integrations.chat'
+import { Route as AppIntegrationsAiRouteImport } from './routes/_app.integrations.ai'
+import { Route as AppAiVisualCatalogRouteImport } from './routes/_app.ai.visual-catalog'
+import { Route as AppAiTrainingRouteImport } from './routes/_app.ai.training'
+import { Route as AppAiPreferencesRouteImport } from './routes/_app.ai.preferences'
+import { Route as AppAiKnowledgeFilesRouteImport } from './routes/_app.ai.knowledge-files'
+import { Route as AppAiInquiriesRouteImport } from './routes/_app.ai.inquiries'
+import { Route as AppAiFeedbackRouteImport } from './routes/_app.ai.feedback'
+import { Route as AppAdminSecurityRouteImport } from './routes/_app.admin.security'
+import { Route as AppAdminSecretsRouteImport } from './routes/_app.admin.secrets'
+import { Route as AppAdminRolesRouteImport } from './routes/_app.admin.roles'
+import { Route as AppAdminBackupRouteImport } from './routes/_app.admin.backup'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRoutePlannerRoute = AppRoutePlannerRouteImport.update({
+  id: '/route-planner',
+  path: '/route-planner',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInboxRoute = AppInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCrmRoute = AppCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampaignsRoute = AppCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSetupWorkspaceRoute = AppSetupWorkspaceRouteImport.update({
+  id: '/setup/workspace',
+  path: '/setup/workspace',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSetupLoginPreviewRoute = AppSetupLoginPreviewRouteImport.update({
+  id: '/setup/login-preview',
+  path: '/setup/login-preview',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSetupInviteRoute = AppSetupInviteRouteImport.update({
+  id: '/setup/invite',
+  path: '/setup/invite',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSalesSlipsRoute = AppSalesSlipsRouteImport.update({
+  id: '/sales/slips',
+  path: '/sales/slips',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSalesProductsRoute = AppSalesProductsRouteImport.update({
+  id: '/sales/products',
+  path: '/sales/products',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSalesOrdersRoute = AppSalesOrdersRouteImport.update({
+  id: '/sales/orders',
+  path: '/sales/orders',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSalesBookingsRoute = AppSalesBookingsRouteImport.update({
+  id: '/sales/bookings',
+  path: '/sales/bookings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLogsUsageRoute = AppLogsUsageRouteImport.update({
+  id: '/logs/usage',
+  path: '/logs/usage',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLogsErrorsRoute = AppLogsErrorsRouteImport.update({
+  id: '/logs/errors',
+  path: '/logs/errors',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLogsAuditRoute = AppLogsAuditRouteImport.update({
+  id: '/logs/audit',
+  path: '/logs/audit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsWebhookRoute = AppIntegrationsWebhookRouteImport.update({
+  id: '/integrations/webhook',
+  path: '/integrations/webhook',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsNotificationsRoute =
+  AppIntegrationsNotificationsRouteImport.update({
+    id: '/integrations/notifications',
+    path: '/integrations/notifications',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppIntegrationsChatRoute = AppIntegrationsChatRouteImport.update({
+  id: '/integrations/chat',
+  path: '/integrations/chat',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsAiRoute = AppIntegrationsAiRouteImport.update({
+  id: '/integrations/ai',
+  path: '/integrations/ai',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiVisualCatalogRoute = AppAiVisualCatalogRouteImport.update({
+  id: '/ai/visual-catalog',
+  path: '/ai/visual-catalog',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiTrainingRoute = AppAiTrainingRouteImport.update({
+  id: '/ai/training',
+  path: '/ai/training',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiPreferencesRoute = AppAiPreferencesRouteImport.update({
+  id: '/ai/preferences',
+  path: '/ai/preferences',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiKnowledgeFilesRoute = AppAiKnowledgeFilesRouteImport.update({
+  id: '/ai/knowledge-files',
+  path: '/ai/knowledge-files',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiInquiriesRoute = AppAiInquiriesRouteImport.update({
+  id: '/ai/inquiries',
+  path: '/ai/inquiries',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiFeedbackRoute = AppAiFeedbackRouteImport.update({
+  id: '/ai/feedback',
+  path: '/ai/feedback',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminSecurityRoute = AppAdminSecurityRouteImport.update({
+  id: '/admin/security',
+  path: '/admin/security',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminSecretsRoute = AppAdminSecretsRouteImport.update({
+  id: '/admin/secrets',
+  path: '/admin/secrets',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminRolesRoute = AppAdminRolesRouteImport.update({
+  id: '/admin/roles',
+  path: '/admin/roles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminBackupRoute = AppAdminBackupRouteImport.update({
+  id: '/admin/backup',
+  path: '/admin/backup',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/campaigns': typeof AppCampaignsRoute
+  '/crm': typeof AppCrmRoute
+  '/inbox': typeof AppInboxRoute
+  '/route-planner': typeof AppRoutePlannerRoute
+  '/admin/backup': typeof AppAdminBackupRoute
+  '/admin/roles': typeof AppAdminRolesRoute
+  '/admin/secrets': typeof AppAdminSecretsRoute
+  '/admin/security': typeof AppAdminSecurityRoute
+  '/ai/feedback': typeof AppAiFeedbackRoute
+  '/ai/inquiries': typeof AppAiInquiriesRoute
+  '/ai/knowledge-files': typeof AppAiKnowledgeFilesRoute
+  '/ai/preferences': typeof AppAiPreferencesRoute
+  '/ai/training': typeof AppAiTrainingRoute
+  '/ai/visual-catalog': typeof AppAiVisualCatalogRoute
+  '/integrations/ai': typeof AppIntegrationsAiRoute
+  '/integrations/chat': typeof AppIntegrationsChatRoute
+  '/integrations/notifications': typeof AppIntegrationsNotificationsRoute
+  '/integrations/webhook': typeof AppIntegrationsWebhookRoute
+  '/logs/audit': typeof AppLogsAuditRoute
+  '/logs/errors': typeof AppLogsErrorsRoute
+  '/logs/usage': typeof AppLogsUsageRoute
+  '/sales/bookings': typeof AppSalesBookingsRoute
+  '/sales/orders': typeof AppSalesOrdersRoute
+  '/sales/products': typeof AppSalesProductsRoute
+  '/sales/slips': typeof AppSalesSlipsRoute
+  '/setup/invite': typeof AppSetupInviteRoute
+  '/setup/login-preview': typeof AppSetupLoginPreviewRoute
+  '/setup/workspace': typeof AppSetupWorkspaceRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/campaigns': typeof AppCampaignsRoute
+  '/crm': typeof AppCrmRoute
+  '/inbox': typeof AppInboxRoute
+  '/route-planner': typeof AppRoutePlannerRoute
+  '/': typeof AppIndexRoute
+  '/admin/backup': typeof AppAdminBackupRoute
+  '/admin/roles': typeof AppAdminRolesRoute
+  '/admin/secrets': typeof AppAdminSecretsRoute
+  '/admin/security': typeof AppAdminSecurityRoute
+  '/ai/feedback': typeof AppAiFeedbackRoute
+  '/ai/inquiries': typeof AppAiInquiriesRoute
+  '/ai/knowledge-files': typeof AppAiKnowledgeFilesRoute
+  '/ai/preferences': typeof AppAiPreferencesRoute
+  '/ai/training': typeof AppAiTrainingRoute
+  '/ai/visual-catalog': typeof AppAiVisualCatalogRoute
+  '/integrations/ai': typeof AppIntegrationsAiRoute
+  '/integrations/chat': typeof AppIntegrationsChatRoute
+  '/integrations/notifications': typeof AppIntegrationsNotificationsRoute
+  '/integrations/webhook': typeof AppIntegrationsWebhookRoute
+  '/logs/audit': typeof AppLogsAuditRoute
+  '/logs/errors': typeof AppLogsErrorsRoute
+  '/logs/usage': typeof AppLogsUsageRoute
+  '/sales/bookings': typeof AppSalesBookingsRoute
+  '/sales/orders': typeof AppSalesOrdersRoute
+  '/sales/products': typeof AppSalesProductsRoute
+  '/sales/slips': typeof AppSalesSlipsRoute
+  '/setup/invite': typeof AppSetupInviteRoute
+  '/setup/login-preview': typeof AppSetupLoginPreviewRoute
+  '/setup/workspace': typeof AppSetupWorkspaceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/campaigns': typeof AppCampaignsRoute
+  '/_app/crm': typeof AppCrmRoute
+  '/_app/inbox': typeof AppInboxRoute
+  '/_app/route-planner': typeof AppRoutePlannerRoute
+  '/_app/': typeof AppIndexRoute
+  '/_app/admin/backup': typeof AppAdminBackupRoute
+  '/_app/admin/roles': typeof AppAdminRolesRoute
+  '/_app/admin/secrets': typeof AppAdminSecretsRoute
+  '/_app/admin/security': typeof AppAdminSecurityRoute
+  '/_app/ai/feedback': typeof AppAiFeedbackRoute
+  '/_app/ai/inquiries': typeof AppAiInquiriesRoute
+  '/_app/ai/knowledge-files': typeof AppAiKnowledgeFilesRoute
+  '/_app/ai/preferences': typeof AppAiPreferencesRoute
+  '/_app/ai/training': typeof AppAiTrainingRoute
+  '/_app/ai/visual-catalog': typeof AppAiVisualCatalogRoute
+  '/_app/integrations/ai': typeof AppIntegrationsAiRoute
+  '/_app/integrations/chat': typeof AppIntegrationsChatRoute
+  '/_app/integrations/notifications': typeof AppIntegrationsNotificationsRoute
+  '/_app/integrations/webhook': typeof AppIntegrationsWebhookRoute
+  '/_app/logs/audit': typeof AppLogsAuditRoute
+  '/_app/logs/errors': typeof AppLogsErrorsRoute
+  '/_app/logs/usage': typeof AppLogsUsageRoute
+  '/_app/sales/bookings': typeof AppSalesBookingsRoute
+  '/_app/sales/orders': typeof AppSalesOrdersRoute
+  '/_app/sales/products': typeof AppSalesProductsRoute
+  '/_app/sales/slips': typeof AppSalesSlipsRoute
+  '/_app/setup/invite': typeof AppSetupInviteRoute
+  '/_app/setup/login-preview': typeof AppSetupLoginPreviewRoute
+  '/_app/setup/workspace': typeof AppSetupWorkspaceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/campaigns'
+    | '/crm'
+    | '/inbox'
+    | '/route-planner'
+    | '/admin/backup'
+    | '/admin/roles'
+    | '/admin/secrets'
+    | '/admin/security'
+    | '/ai/feedback'
+    | '/ai/inquiries'
+    | '/ai/knowledge-files'
+    | '/ai/preferences'
+    | '/ai/training'
+    | '/ai/visual-catalog'
+    | '/integrations/ai'
+    | '/integrations/chat'
+    | '/integrations/notifications'
+    | '/integrations/webhook'
+    | '/logs/audit'
+    | '/logs/errors'
+    | '/logs/usage'
+    | '/sales/bookings'
+    | '/sales/orders'
+    | '/sales/products'
+    | '/sales/slips'
+    | '/setup/invite'
+    | '/setup/login-preview'
+    | '/setup/workspace'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/campaigns'
+    | '/crm'
+    | '/inbox'
+    | '/route-planner'
+    | '/'
+    | '/admin/backup'
+    | '/admin/roles'
+    | '/admin/secrets'
+    | '/admin/security'
+    | '/ai/feedback'
+    | '/ai/inquiries'
+    | '/ai/knowledge-files'
+    | '/ai/preferences'
+    | '/ai/training'
+    | '/ai/visual-catalog'
+    | '/integrations/ai'
+    | '/integrations/chat'
+    | '/integrations/notifications'
+    | '/integrations/webhook'
+    | '/logs/audit'
+    | '/logs/errors'
+    | '/logs/usage'
+    | '/sales/bookings'
+    | '/sales/orders'
+    | '/sales/products'
+    | '/sales/slips'
+    | '/setup/invite'
+    | '/setup/login-preview'
+    | '/setup/workspace'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/campaigns'
+    | '/_app/crm'
+    | '/_app/inbox'
+    | '/_app/route-planner'
+    | '/_app/'
+    | '/_app/admin/backup'
+    | '/_app/admin/roles'
+    | '/_app/admin/secrets'
+    | '/_app/admin/security'
+    | '/_app/ai/feedback'
+    | '/_app/ai/inquiries'
+    | '/_app/ai/knowledge-files'
+    | '/_app/ai/preferences'
+    | '/_app/ai/training'
+    | '/_app/ai/visual-catalog'
+    | '/_app/integrations/ai'
+    | '/_app/integrations/chat'
+    | '/_app/integrations/notifications'
+    | '/_app/integrations/webhook'
+    | '/_app/logs/audit'
+    | '/_app/logs/errors'
+    | '/_app/logs/usage'
+    | '/_app/sales/bookings'
+    | '/_app/sales/orders'
+    | '/_app/sales/products'
+    | '/_app/sales/slips'
+    | '/_app/setup/invite'
+    | '/_app/setup/login-preview'
+    | '/_app/setup/workspace'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/route-planner': {
+      id: '/_app/route-planner'
+      path: '/route-planner'
+      fullPath: '/route-planner'
+      preLoaderRoute: typeof AppRoutePlannerRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/inbox': {
+      id: '/_app/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AppInboxRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/crm': {
+      id: '/_app/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof AppCrmRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns': {
+      id: '/_app/campaigns'
+      path: '/campaigns'
+      fullPath: '/campaigns'
+      preLoaderRoute: typeof AppCampaignsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/setup/workspace': {
+      id: '/_app/setup/workspace'
+      path: '/setup/workspace'
+      fullPath: '/setup/workspace'
+      preLoaderRoute: typeof AppSetupWorkspaceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/setup/login-preview': {
+      id: '/_app/setup/login-preview'
+      path: '/setup/login-preview'
+      fullPath: '/setup/login-preview'
+      preLoaderRoute: typeof AppSetupLoginPreviewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/setup/invite': {
+      id: '/_app/setup/invite'
+      path: '/setup/invite'
+      fullPath: '/setup/invite'
+      preLoaderRoute: typeof AppSetupInviteRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sales/slips': {
+      id: '/_app/sales/slips'
+      path: '/sales/slips'
+      fullPath: '/sales/slips'
+      preLoaderRoute: typeof AppSalesSlipsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sales/products': {
+      id: '/_app/sales/products'
+      path: '/sales/products'
+      fullPath: '/sales/products'
+      preLoaderRoute: typeof AppSalesProductsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sales/orders': {
+      id: '/_app/sales/orders'
+      path: '/sales/orders'
+      fullPath: '/sales/orders'
+      preLoaderRoute: typeof AppSalesOrdersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sales/bookings': {
+      id: '/_app/sales/bookings'
+      path: '/sales/bookings'
+      fullPath: '/sales/bookings'
+      preLoaderRoute: typeof AppSalesBookingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/logs/usage': {
+      id: '/_app/logs/usage'
+      path: '/logs/usage'
+      fullPath: '/logs/usage'
+      preLoaderRoute: typeof AppLogsUsageRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/logs/errors': {
+      id: '/_app/logs/errors'
+      path: '/logs/errors'
+      fullPath: '/logs/errors'
+      preLoaderRoute: typeof AppLogsErrorsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/logs/audit': {
+      id: '/_app/logs/audit'
+      path: '/logs/audit'
+      fullPath: '/logs/audit'
+      preLoaderRoute: typeof AppLogsAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/integrations/webhook': {
+      id: '/_app/integrations/webhook'
+      path: '/integrations/webhook'
+      fullPath: '/integrations/webhook'
+      preLoaderRoute: typeof AppIntegrationsWebhookRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/integrations/notifications': {
+      id: '/_app/integrations/notifications'
+      path: '/integrations/notifications'
+      fullPath: '/integrations/notifications'
+      preLoaderRoute: typeof AppIntegrationsNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/integrations/chat': {
+      id: '/_app/integrations/chat'
+      path: '/integrations/chat'
+      fullPath: '/integrations/chat'
+      preLoaderRoute: typeof AppIntegrationsChatRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/integrations/ai': {
+      id: '/_app/integrations/ai'
+      path: '/integrations/ai'
+      fullPath: '/integrations/ai'
+      preLoaderRoute: typeof AppIntegrationsAiRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/visual-catalog': {
+      id: '/_app/ai/visual-catalog'
+      path: '/ai/visual-catalog'
+      fullPath: '/ai/visual-catalog'
+      preLoaderRoute: typeof AppAiVisualCatalogRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/training': {
+      id: '/_app/ai/training'
+      path: '/ai/training'
+      fullPath: '/ai/training'
+      preLoaderRoute: typeof AppAiTrainingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/preferences': {
+      id: '/_app/ai/preferences'
+      path: '/ai/preferences'
+      fullPath: '/ai/preferences'
+      preLoaderRoute: typeof AppAiPreferencesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/knowledge-files': {
+      id: '/_app/ai/knowledge-files'
+      path: '/ai/knowledge-files'
+      fullPath: '/ai/knowledge-files'
+      preLoaderRoute: typeof AppAiKnowledgeFilesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/inquiries': {
+      id: '/_app/ai/inquiries'
+      path: '/ai/inquiries'
+      fullPath: '/ai/inquiries'
+      preLoaderRoute: typeof AppAiInquiriesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/feedback': {
+      id: '/_app/ai/feedback'
+      path: '/ai/feedback'
+      fullPath: '/ai/feedback'
+      preLoaderRoute: typeof AppAiFeedbackRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/admin/security': {
+      id: '/_app/admin/security'
+      path: '/admin/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AppAdminSecurityRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/admin/secrets': {
+      id: '/_app/admin/secrets'
+      path: '/admin/secrets'
+      fullPath: '/admin/secrets'
+      preLoaderRoute: typeof AppAdminSecretsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/admin/roles': {
+      id: '/_app/admin/roles'
+      path: '/admin/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AppAdminRolesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/admin/backup': {
+      id: '/_app/admin/backup'
+      path: '/admin/backup'
+      fullPath: '/admin/backup'
+      preLoaderRoute: typeof AppAdminBackupRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppCampaignsRoute: typeof AppCampaignsRoute
+  AppCrmRoute: typeof AppCrmRoute
+  AppInboxRoute: typeof AppInboxRoute
+  AppRoutePlannerRoute: typeof AppRoutePlannerRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppAdminBackupRoute: typeof AppAdminBackupRoute
+  AppAdminRolesRoute: typeof AppAdminRolesRoute
+  AppAdminSecretsRoute: typeof AppAdminSecretsRoute
+  AppAdminSecurityRoute: typeof AppAdminSecurityRoute
+  AppAiFeedbackRoute: typeof AppAiFeedbackRoute
+  AppAiInquiriesRoute: typeof AppAiInquiriesRoute
+  AppAiKnowledgeFilesRoute: typeof AppAiKnowledgeFilesRoute
+  AppAiPreferencesRoute: typeof AppAiPreferencesRoute
+  AppAiTrainingRoute: typeof AppAiTrainingRoute
+  AppAiVisualCatalogRoute: typeof AppAiVisualCatalogRoute
+  AppIntegrationsAiRoute: typeof AppIntegrationsAiRoute
+  AppIntegrationsChatRoute: typeof AppIntegrationsChatRoute
+  AppIntegrationsNotificationsRoute: typeof AppIntegrationsNotificationsRoute
+  AppIntegrationsWebhookRoute: typeof AppIntegrationsWebhookRoute
+  AppLogsAuditRoute: typeof AppLogsAuditRoute
+  AppLogsErrorsRoute: typeof AppLogsErrorsRoute
+  AppLogsUsageRoute: typeof AppLogsUsageRoute
+  AppSalesBookingsRoute: typeof AppSalesBookingsRoute
+  AppSalesOrdersRoute: typeof AppSalesOrdersRoute
+  AppSalesProductsRoute: typeof AppSalesProductsRoute
+  AppSalesSlipsRoute: typeof AppSalesSlipsRoute
+  AppSetupInviteRoute: typeof AppSetupInviteRoute
+  AppSetupLoginPreviewRoute: typeof AppSetupLoginPreviewRoute
+  AppSetupWorkspaceRoute: typeof AppSetupWorkspaceRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppCampaignsRoute: AppCampaignsRoute,
+  AppCrmRoute: AppCrmRoute,
+  AppInboxRoute: AppInboxRoute,
+  AppRoutePlannerRoute: AppRoutePlannerRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppAdminBackupRoute: AppAdminBackupRoute,
+  AppAdminRolesRoute: AppAdminRolesRoute,
+  AppAdminSecretsRoute: AppAdminSecretsRoute,
+  AppAdminSecurityRoute: AppAdminSecurityRoute,
+  AppAiFeedbackRoute: AppAiFeedbackRoute,
+  AppAiInquiriesRoute: AppAiInquiriesRoute,
+  AppAiKnowledgeFilesRoute: AppAiKnowledgeFilesRoute,
+  AppAiPreferencesRoute: AppAiPreferencesRoute,
+  AppAiTrainingRoute: AppAiTrainingRoute,
+  AppAiVisualCatalogRoute: AppAiVisualCatalogRoute,
+  AppIntegrationsAiRoute: AppIntegrationsAiRoute,
+  AppIntegrationsChatRoute: AppIntegrationsChatRoute,
+  AppIntegrationsNotificationsRoute: AppIntegrationsNotificationsRoute,
+  AppIntegrationsWebhookRoute: AppIntegrationsWebhookRoute,
+  AppLogsAuditRoute: AppLogsAuditRoute,
+  AppLogsErrorsRoute: AppLogsErrorsRoute,
+  AppLogsUsageRoute: AppLogsUsageRoute,
+  AppSalesBookingsRoute: AppSalesBookingsRoute,
+  AppSalesOrdersRoute: AppSalesOrdersRoute,
+  AppSalesProductsRoute: AppSalesProductsRoute,
+  AppSalesSlipsRoute: AppSalesSlipsRoute,
+  AppSetupInviteRoute: AppSetupInviteRoute,
+  AppSetupLoginPreviewRoute: AppSetupLoginPreviewRoute,
+  AppSetupWorkspaceRoute: AppSetupWorkspaceRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
