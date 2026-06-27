@@ -41,6 +41,7 @@ import { Route as AppAdminSecurityRouteImport } from './routes/_app.admin.securi
 import { Route as AppAdminSecretsRouteImport } from './routes/_app.admin.secrets'
 import { Route as AppAdminRolesRouteImport } from './routes/_app.admin.roles'
 import { Route as AppAdminBackupRouteImport } from './routes/_app.admin.backup'
+import { Route as ApiPublicWebhookChannelRouteImport } from './routes/api/public/webhook.$channel'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -202,6 +203,11 @@ const AppAdminBackupRoute = AppAdminBackupRouteImport.update({
   path: '/admin/backup',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicWebhookChannelRoute = ApiPublicWebhookChannelRouteImport.update({
+  id: '/api/public/webhook/$channel',
+  path: '/api/public/webhook/$channel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/setup/login-preview': typeof AppSetupLoginPreviewRoute
   '/setup/workspace': typeof AppSetupWorkspaceRoute
   '/api/public/seed-owner': typeof ApiPublicSeedOwnerRoute
+  '/api/public/webhook/$channel': typeof ApiPublicWebhookChannelRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/setup/login-preview': typeof AppSetupLoginPreviewRoute
   '/setup/workspace': typeof AppSetupWorkspaceRoute
   '/api/public/seed-owner': typeof ApiPublicSeedOwnerRoute
+  '/api/public/webhook/$channel': typeof ApiPublicWebhookChannelRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/_app/setup/login-preview': typeof AppSetupLoginPreviewRoute
   '/_app/setup/workspace': typeof AppSetupWorkspaceRoute
   '/api/public/seed-owner': typeof ApiPublicSeedOwnerRoute
+  '/api/public/webhook/$channel': typeof ApiPublicWebhookChannelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/setup/login-preview'
     | '/setup/workspace'
     | '/api/public/seed-owner'
+    | '/api/public/webhook/$channel'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -371,6 +381,7 @@ export interface FileRouteTypes {
     | '/setup/login-preview'
     | '/setup/workspace'
     | '/api/public/seed-owner'
+    | '/api/public/webhook/$channel'
   id:
     | '__root__'
     | '/_app'
@@ -405,12 +416,14 @@ export interface FileRouteTypes {
     | '/_app/setup/login-preview'
     | '/_app/setup/workspace'
     | '/api/public/seed-owner'
+    | '/api/public/webhook/$channel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicSeedOwnerRoute: typeof ApiPublicSeedOwnerRoute
+  ApiPublicWebhookChannelRoute: typeof ApiPublicWebhookChannelRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -639,6 +652,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminBackupRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/webhook/$channel': {
+      id: '/api/public/webhook/$channel'
+      path: '/api/public/webhook/$channel'
+      fullPath: '/api/public/webhook/$channel'
+      preLoaderRoute: typeof ApiPublicWebhookChannelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -712,6 +732,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicSeedOwnerRoute: ApiPublicSeedOwnerRoute,
+  ApiPublicWebhookChannelRoute: ApiPublicWebhookChannelRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
