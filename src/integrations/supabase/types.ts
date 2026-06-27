@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      inbox_messages: {
+        Row: {
+          channel: string
+          created_at: string
+          external_user_id: string
+          id: string
+          raw: Json | null
+          received_at: string
+          text: string
+          user_name: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          external_user_id: string
+          id?: string
+          raw?: Json | null
+          received_at?: string
+          text?: string
+          user_name?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          external_user_id?: string
+          id?: string
+          raw?: Json | null
+          received_at?: string
+          text?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
