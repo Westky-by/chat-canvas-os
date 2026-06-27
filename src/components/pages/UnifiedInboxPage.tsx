@@ -44,10 +44,52 @@ export function UnifiedInboxPage() {
     <div className="h-full grid grid-cols-[280px_1fr_320px] divide-x divide-border">
       {/* List */}
       <aside className="overflow-y-auto bg-surface">
-        <div className="p-3 border-b border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Conversations ({conversations.length})
+        <div className="p-3 border-b border-border space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Conversations ({filteredConvs.length}/{conversations.length})
+            </div>
+            <button
+              onClick={() => setFilterOpen((o) => !o)}
+              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md border transition ${
+                selectedChannels.length > 0 ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:bg-surface-hover"
+              }`}
+            >
+              <Filter className="w-3 h-3" />
+              ช่องทาง{selectedChannels.length > 0 ? ` (${selectedChannels.length})` : ""}
+            </button>
+          </div>
+          {filterOpen && (
+            <div className="flex flex-wrap gap-1">
+              {ALL_CHANNELS.map((ch) => {
+                const on = selectedChannels.includes(ch);
+                return (
+                  <button
+                    key={ch}
+                    onClick={() => toggleChannel(ch)}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                      on ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-surface-hover"
+                    }`}
+                  >
+                    {ch}
+                  </button>
+                );
+              })}
+              {selectedChannels.length > 0 && (
+                <button
+                  onClick={() => setSelectedChannels([])}
+                  className="text-[10px] px-2 py-0.5 rounded-full text-muted-foreground hover:text-foreground flex items-center gap-0.5"
+                >
+                  <X className="w-2.5 h-2.5" /> ล้าง
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        {conversations.map((c) => {
+        {filteredConvs.length === 0 && (
+          <div className="p-6 text-center text-xs text-muted-foreground">ไม่มีบทสนทนาในช่องทางที่เลือก</div>
+        )}
+        {filteredConvs.map((c) => {
           const cust = customers.find((cu) => cu.id === c.customerId);
           return (
             <button
@@ -68,6 +110,7 @@ export function UnifiedInboxPage() {
           );
         })}
       </aside>
+
 
       {/* Thread */}
       <section className="flex flex-col bg-background">
