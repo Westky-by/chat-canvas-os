@@ -99,6 +99,8 @@ interface AppState {
   updateNotificationRule: (id: string, patch: Partial<NotificationRule>) => void;
   addNotificationRule: (patch: Partial<NotificationRule>) => void;
   deleteNotificationRule: (id: string) => void;
+  resetAll: () => void;
+
 }
 
 const mask = (raw: string) => (raw.length <= 4 ? "••••" : `•••• ${raw.slice(-4)}`);
