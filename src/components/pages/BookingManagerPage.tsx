@@ -10,7 +10,7 @@ import type { Booking } from "@/types";
 export function BookingManagerPage() {
   const bookings = useAppStore((s) => s.bookings);
   const customers = useAppStore((s) => s.customers);
-  const confirm = useAppStore((s) => s.confirmBooking);
+  const confirmBooking = useAppStore((s) => s.confirmBooking);
   const cancel = useAppStore((s) => s.cancelBooking);
   const add = useAppStore((s) => s.addBooking);
 
