@@ -1,3 +1,4 @@
+import React from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ActionButton } from "@/components/common/ActionButton";
 import { StatusBadge } from "@/components/common/StatusBadge";
@@ -64,7 +65,7 @@ export function BackupExportPage() {
   );
 }
 
-const Info = ({ label, value }: { label: string; value: string }) => (
+const Info = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="bg-background rounded-lg px-2 py-1.5">
     <div className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</div>
     <div className="text-xs font-medium mt-0.5">{value}</div>

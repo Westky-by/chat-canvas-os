@@ -16,8 +16,8 @@ export function IntegrationCard({
   status: "connected" | "disconnected" | "error";
   webhookUrl: string;
   maskedToken: string;
-  lastSync?: string;
-  lastMessage?: string;
+  lastSync?: React.ReactNode;
+  lastMessage?: React.ReactNode;
   error?: string;
   actions?: ReactNode;
   icon?: ReactNode;
