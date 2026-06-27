@@ -258,6 +258,10 @@ table{width:100%;border-collapse:collapse;margin-top:4px}th,td{border:1px solid 
           </div>
         )}
         <span className="ml-auto text-[11px] text-muted-foreground">แสดงผล: {rangeLabel}</span>
+        <div className="flex items-center gap-2">
+          <ActionButton size="sm" variant="ghost" icon={<FileDown className="w-3 h-3" />} onClick={exportCSV}>Export CSV</ActionButton>
+          <ActionButton size="sm" variant="primary" icon={<FileText className="w-3 h-3" />} onClick={exportPDF}>Export PDF</ActionButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
