@@ -4,7 +4,7 @@ import { MetricCard } from "@/components/common/MetricCard";
 import { ActionButton } from "@/components/common/ActionButton";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Modal } from "@/components/common/Modal";
-import { Sparkles, Calendar, DollarSign, Brain, Bell, Play, Plus, Pencil, Trash2 } from "lucide-react";
+import { Sparkles, Calendar, DollarSign, Brain, Bell, Play, Plus, Pencil, Trash2, FileDown, FileText } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { fmtTHB } from "@/utils/formatters";
 import { RelativeTime } from "@/components/common/RelativeTime";
