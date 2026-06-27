@@ -5,24 +5,165 @@ import { ActionButton } from "@/components/common/ActionButton";
 import { RelativeTime } from "@/components/common/RelativeTime";
 import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2, Filter, X, Loader2 } from "lucide-react";
 import { aiReply } from "@/lib/aiReply.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { Channel, Conversation, Customer, Message } from "@/types";
 
-const ALL_CHANNELS = ["LINE", "Telegram", "Facebook Messenger", "Instagram", "WhatsApp", "Web Chat"] as const;
+const ALL_CHANNELS: Channel[] = ["LINE", "Telegram", "Facebook", "Instagram", "WhatsApp", "Website", "Webhook"];
+
+type InboxRow = {
+  id: string;
+  channel: string;
+  external_user_id: string;
+  user_name: string | null;
+  text: string;
+  received_at: string;
+  created_at?: string;
+};
+
+const toChannel = (raw: string): Channel => {
+  const channel = raw.toUpperCase();
+  if (channel.includes("LINE")) return "LINE";
+  if (channel.includes("TELEGRAM")) return "Telegram";
+  if (channel.includes("WHATSAPP")) return "WhatsApp";
+  if (channel.includes("INSTAGRAM")) return "Instagram";
+  if (channel.includes("MESSENGER") || channel.includes("FACEBOOK")) return "Facebook";
+  if (channel.includes("WEB")) return "Website";
+  return "Webhook";
+};
+
+const shortExternalId = (id: string) => (id.length > 10 ? `…${id.slice(-8)}` : id);
 
 export function UnifiedInboxPage() {
-  const conversations = useAppStore((s) => s.conversations);
-  const messages = useAppStore((s) => s.messages);
-  const customers = useAppStore((s) => s.customers);
+  const storedConversations = useAppStore((s) => s.conversations);
+  const storedMessages = useAppStore((s) => s.messages);
+  const storedCustomers = useAppStore((s) => s.customers);
   const catalog = useAppStore((s) => s.catalog);
   const prefs = useAppStore((s) => s.customerPreferences);
   const inquiries = useAppStore((s) => s.inquiries);
   const addMessage = useAppStore((s) => s.addMessage);
   const setConversationMode = useAppStore((s) => s.setConversationMode);
 
-  const [activeId, setActiveId] = useState(conversations[0]?.id ?? "");
+  const [liveRows, setLiveRows] = useState<InboxRow[]>([]);
+  const [liveLoading, setLiveLoading] = useState(true);
+  const [liveError, setLiveError] = useState("");
+  const [activeId, setActiveId] = useState(storedConversations[0]?.id ?? "");
   const [text, setText] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadInbox = async () => {
+      const { data, error } = await supabase
+        .from("inbox_messages")
+        .select("id, channel, external_user_id, user_name, text, received_at, created_at")
+        .order("received_at", { ascending: false })
+        .limit(300);
+
+      if (!mounted) return;
+      if (error) {
+        setLiveError(error.message);
+        setLiveLoading(false);
+        return;
+      }
+      setLiveRows((data ?? []) as InboxRow[]);
+      setLiveError("");
+      setLiveLoading(false);
+    };
+
+    loadInbox();
+    const poll = window.setInterval(loadInbox, 8000);
+    const channel = supabase
+      .channel("inbox_messages_live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "inbox_messages" },
+        (payload) => {
+          const row = payload.new as InboxRow;
+          setLiveRows((rows) => [row, ...rows.filter((r) => r.id !== row.id)].slice(0, 300));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      window.clearInterval(poll);
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const liveInbox = useMemo(() => {
+    const grouped = new Map<string, { customer: Customer; conversation: Conversation; messages: Message[] }>();
+    const rows = [...liveRows].sort(
+      (a, b) => new Date(a.received_at || a.created_at || 0).getTime() - new Date(b.received_at || b.created_at || 0).getTime(),
+    );
+
+    for (const row of rows) {
+      const channel = toChannel(row.channel);
+      const at = row.received_at || row.created_at || new Date().toISOString();
+      const key = `live:${channel}:${row.external_user_id}`;
+      const customerId = `customer:${key}`;
+      const conversationId = `conversation:${key}`;
+      const displayName = row.user_name?.trim() || `${channel} ${shortExternalId(row.external_user_id)}`;
+      const existing = grouped.get(key);
+
+      if (!existing) {
+        grouped.set(key, {
+          customer: {
+            id: customerId,
+            name: displayName,
+            channel,
+            phone: row.external_user_id,
+            tier: "New",
+            tags: [channel === "LINE" ? "LINE OA" : channel, "Live Inbox"],
+            lastActivity: at,
+          },
+          conversation: {
+            id: conversationId,
+            customerId,
+            channel,
+            lastMessage: row.text,
+            unread: 0,
+            mode: "ai",
+            updatedAt: at,
+          },
+          messages: [],
+        });
+      }
+
+      const bucket = grouped.get(key)!;
+      bucket.customer.lastActivity = at;
+      bucket.conversation.lastMessage = row.text;
+      bucket.conversation.updatedAt = at;
+      bucket.conversation.unread += 1;
+      bucket.messages.push({
+        id: `live-message:${row.id}`,
+        conversationId,
+        sender: "customer",
+        text: row.text || "(ไม่มีข้อความ)",
+        at,
+      });
+    }
+
+    const buckets = [...grouped.values()].sort(
+      (a, b) => new Date(b.conversation.updatedAt).getTime() - new Date(a.conversation.updatedAt).getTime(),
+    );
+
+    return {
+      customers: buckets.map((b) => b.customer),
+      conversations: buckets.map((b) => b.conversation),
+      messages: buckets.flatMap((b) => b.messages),
+    };
+  }, [liveRows]);
+
+  const customers = useMemo(() => [...liveInbox.customers, ...storedCustomers], [liveInbox.customers, storedCustomers]);
+  const conversations = useMemo(
+    () => [...liveInbox.conversations, ...storedConversations],
+    [liveInbox.conversations, storedConversations],
+  );
+  const messages = useMemo(() => [...storedMessages, ...liveInbox.messages], [storedMessages, liveInbox.messages]);
 
   // Auto-select conversation from ?customer=ID (e.g. navigated from CRM)
   useEffect(() => {
@@ -33,6 +174,11 @@ export function UnifiedInboxPage() {
     const conv = conversations.find((c) => c.customerId === cid);
     if (conv) setActiveId(conv.id);
   }, [conversations]);
+
+  useEffect(() => {
+    if (activeId && conversations.some((c) => c.id === activeId)) return;
+    setActiveId(conversations[0]?.id ?? "");
+  }, [activeId, conversations]);
 
 
   const filteredConvs = useMemo(
@@ -133,7 +279,10 @@ export function UnifiedInboxPage() {
           )}
         </div>
         {filteredConvs.length === 0 && (
-          <div className="p-6 text-center text-xs text-muted-foreground">ไม่มีบทสนทนาในช่องทางที่เลือก</div>
+          <div className="p-6 text-center text-xs text-muted-foreground">
+            {liveLoading ? "กำลังดึงข้อความจาก LINE OA..." : "ไม่มีบทสนทนาในช่องทางที่เลือก"}
+            {liveError && <div className="mt-2 text-danger">โหลดข้อความ webhook ไม่สำเร็จ: {liveError}</div>}
+          </div>
         )}
         {filteredConvs.map((c) => {
           const cust = customers.find((cu) => cu.id === c.customerId);
