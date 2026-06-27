@@ -602,11 +602,13 @@ export const useAppStore = create<AppState>()(
       usageLogs: [],
       errorLogs: [],
       copilotMessages: [],
+    }));
+    toast.success("ล้างข้อมูลทั้งหมดเรียบร้อย — เริ่มต้นจาก 0");
+  },
     }),
     {
       name: "app-os-settings-v1",
       storage: createJSONStorage(() => localStorage),
-      // Only persist user-configured settings (incl. raw API keys for owner's own browser).
       partialize: (state) => ({
         aiProviders: state.aiProviders,
         chatIntegrations: state.chatIntegrations,
@@ -616,6 +618,7 @@ export const useAppStore = create<AppState>()(
     },
   ),
 );
+
 
 
 
