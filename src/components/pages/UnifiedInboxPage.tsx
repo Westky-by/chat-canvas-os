@@ -36,6 +36,11 @@ const toChannel = (raw: string): Channel => {
 };
 
 const shortExternalId = (id: string) => (id.length > 10 ? `…${id.slice(-8)}` : id);
+const toMessageSender = (sender?: string): Message["sender"] => {
+  if (sender === "ai") return "ai";
+  if (sender === "admin" || sender === "system") return "admin";
+  return "customer";
+};
 
 export function UnifiedInboxPage() {
   const catalog = useAppStore((s) => s.catalog);
@@ -110,7 +115,7 @@ export function UnifiedInboxPage() {
       const conversationId = `conversation:${key}`;
       const displayName = row.user_name?.trim() || `${channel} ${shortExternalId(row.external_user_id)}`;
       const existing = grouped.get(key);
-      const sender = row.sender === "ai" || row.sender === "admin" || row.sender === "system" ? row.sender : "customer";
+      const sender = toMessageSender(row.sender);
 
       if (!existing) {
         grouped.set(key, {
@@ -146,7 +151,7 @@ export function UnifiedInboxPage() {
       bucket.messages.push({
         id: `live-message:${row.id}`,
         conversationId,
-        sender: sender === "system" ? "admin" : sender,
+        sender,
         text: row.text || "(ไม่มีข้อความ)",
         at,
       });
