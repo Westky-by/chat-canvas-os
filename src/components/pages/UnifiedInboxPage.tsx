@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { PageContainer } from "@/components/layout/PageContainer";
+import { useMemo, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { RelativeTime } from "@/components/common/RelativeTime";
-import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2 } from "lucide-react";
+import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2, Filter, X, Loader2 } from "lucide-react";
+import { aiReply } from "@/lib/aiReply.functions";
+import { toast } from "sonner";
+
+const ALL_CHANNELS = ["LINE", "Telegram", "Facebook Messenger", "Instagram", "WhatsApp", "Web Chat"] as const;
 
 export function UnifiedInboxPage() {
   const conversations = useAppStore((s) => s.conversations);
@@ -17,6 +20,16 @@ export function UnifiedInboxPage() {
 
   const [activeId, setActiveId] = useState(conversations[0]?.id ?? "");
   const [text, setText] = useState("");
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const filteredConvs = useMemo(
+    () => (selectedChannels.length === 0 ? conversations : conversations.filter((c) => selectedChannels.includes(c.channel))),
+    [conversations, selectedChannels],
+  );
+
+  const toggleChannel = (ch: string) =>
+    setSelectedChannels((s) => (s.includes(ch) ? s.filter((x) => x !== ch) : [...s, ch]));
   const activeConv = conversations.find((c) => c.id === activeId);
   const activeCust = customers.find((c) => c.id === activeConv?.customerId);
   const thread = messages.filter((m) => m.conversationId === activeId);
@@ -29,14 +42,88 @@ export function UnifiedInboxPage() {
     setText("");
   };
 
+  const aiProviders = useAppStore((s) => s.aiProviders);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const generateAIReply = async () => {
+    if (!activeId || thread.length === 0) return;
+    const primary = aiProviders.find((p) => p.role === "primary" && p.status === "active") ?? aiProviders[0];
+    if (!primary) return toast.error("ยังไม่มี AI Provider — ตั้งค่าใน Integrations → AI API Providers");
+    setAiLoading(true);
+    try {
+      const history = thread.slice(-12).map((m) => ({
+        role: (m.sender === "customer" ? "user" : "assistant") as "user" | "assistant",
+        content: m.text,
+      }));
+      const res = await aiReply({
+        data: {
+          provider: primary.providerLabel,
+          model: primary.model,
+          systemPrompt: primary.systemPrompt,
+          userApiKey: primary.rawKey,
+          messages: history,
+        },
+      });
+      addMessage(activeId, res.text || "(ไม่มีคำตอบ)", "ai");
+      toast.success(`ตอบโดย ${res.provider}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "เรียก AI ไม่สำเร็จ");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+
   return (
     <div className="h-full grid grid-cols-[280px_1fr_320px] divide-x divide-border">
       {/* List */}
       <aside className="overflow-y-auto bg-surface">
-        <div className="p-3 border-b border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Conversations ({conversations.length})
+        <div className="p-3 border-b border-border space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Conversations ({filteredConvs.length}/{conversations.length})
+            </div>
+            <button
+              onClick={() => setFilterOpen((o) => !o)}
+              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md border transition ${
+                selectedChannels.length > 0 ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:bg-surface-hover"
+              }`}
+            >
+              <Filter className="w-3 h-3" />
+              ช่องทาง{selectedChannels.length > 0 ? ` (${selectedChannels.length})` : ""}
+            </button>
+          </div>
+          {filterOpen && (
+            <div className="flex flex-wrap gap-1">
+              {ALL_CHANNELS.map((ch) => {
+                const on = selectedChannels.includes(ch);
+                return (
+                  <button
+                    key={ch}
+                    onClick={() => toggleChannel(ch)}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                      on ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-surface-hover"
+                    }`}
+                  >
+                    {ch}
+                  </button>
+                );
+              })}
+              {selectedChannels.length > 0 && (
+                <button
+                  onClick={() => setSelectedChannels([])}
+                  className="text-[10px] px-2 py-0.5 rounded-full text-muted-foreground hover:text-foreground flex items-center gap-0.5"
+                >
+                  <X className="w-2.5 h-2.5" /> ล้าง
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        {conversations.map((c) => {
+        {filteredConvs.length === 0 && (
+          <div className="p-6 text-center text-xs text-muted-foreground">ไม่มีบทสนทนาในช่องทางที่เลือก</div>
+        )}
+        {filteredConvs.map((c) => {
           const cust = customers.find((cu) => cu.id === c.customerId);
           return (
             <button
@@ -57,6 +144,7 @@ export function UnifiedInboxPage() {
           );
         })}
       </aside>
+
 
       {/* Thread */}
       <section className="flex flex-col bg-background">
@@ -102,6 +190,13 @@ export function UnifiedInboxPage() {
             placeholder="พิมพ์ตอบกลับ..."
             className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           />
+          <ActionButton
+            icon={aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            onClick={generateAIReply}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "AI..." : "ให้ AI ตอบ"}
+          </ActionButton>
           <ActionButton variant="primary" icon={<Send className="w-3.5 h-3.5" />} onClick={send}>ส่ง</ActionButton>
         </div>
       </section>

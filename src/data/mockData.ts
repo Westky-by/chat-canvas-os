@@ -101,23 +101,27 @@ export const routes: RouteRecord[] = [
 ];
 
 export const aiProviders: AIProvider[] = [
-  { id: "AI001", name: "Gemini", status: "active", model: "gemini-2.0-flash", maskedKey: "AIza••••••••3xK9", role: "primary", lastTested: ago(60), costLimit: 5000 },
-  { id: "AI002", name: "OpenAI", status: "active", model: "gpt-4o", maskedKey: "sk-••••••••pQ2x", role: "fallback", lastTested: ago(120), costLimit: 3000 },
-  { id: "AI003", name: "Claude", status: "disabled", model: "claude-sonnet-4", maskedKey: "sk-ant-••••aBc1", role: "manual", costLimit: 2000 },
-  { id: "AI004", name: "Grok", status: "disabled", model: "grok-2", maskedKey: "—", role: "manual", costLimit: 0 },
-  { id: "AI005", name: "Vertex AI", status: "disabled", model: "gemini-pro-vertex", maskedKey: "—", role: "manual", costLimit: 0 },
-  { id: "AI006", name: "Custom", status: "disabled", model: "custom-llm-v1", maskedKey: "—", role: "manual", costLimit: 0 },
-  { id: "AI007", name: "OpenAI-Compatible", status: "disabled", model: "any", maskedKey: "—", role: "manual", costLimit: 0 },
+  {
+    id: "AI001",
+    name: "Gemini",
+    providerLabel: "Lovable AI / Google Gemini API",
+    status: "active",
+    model: "google/gemini-2.5-flash-lite",
+    maskedKey: "—",
+    role: "primary",
+    costLimit: 0,
+    systemPrompt: "คุณคือผู้ช่วย AI ของร้าน ตอบลูกค้าอย่างสุภาพ กระชับ และเป็นมิตร",
+  },
 ];
 
 export const chatIntegrations: ChatIntegration[] = [
-  { id: "CH001", name: "LINE OA", status: "connected", webhookUrl: "https://api.example.com/webhooks/line", maskedToken: "Bearer ••••a1b2", lastSync: ago(2), lastMessage: ago(5) },
-  { id: "CH002", name: "Telegram", status: "connected", webhookUrl: "https://api.example.com/webhooks/tg", maskedToken: "•••• 8842:ABc", lastSync: ago(10), lastMessage: ago(30) },
-  { id: "CH003", name: "Facebook Messenger", status: "connected", webhookUrl: "https://api.example.com/webhooks/fb", maskedToken: "EAAB••••xyz", lastSync: ago(15), lastMessage: ago(45) },
-  { id: "CH004", name: "Instagram DM", status: "error", webhookUrl: "https://api.example.com/webhooks/ig", maskedToken: "IGQV••••pqr", error: "Token expired" },
-  { id: "CH005", name: "WhatsApp Business", status: "disconnected", webhookUrl: "—", maskedToken: "—" },
-  { id: "CH006", name: "Website Live Chat", status: "connected", webhookUrl: "https://api.example.com/webhooks/web", maskedToken: "•••• wsk_22" },
-  { id: "CH007", name: "Custom Webhook", status: "disconnected", webhookUrl: "—", maskedToken: "—" },
+  { id: "CH001", name: "LINE OA", channelType: "LINE", status: "disconnected", inboundPath: "/api/public/webhook/line", sendEndpoint: "https://api.line.me/v2/bot/message/reply", webhookUrl: "/api/public/webhook/line", maskedToken: "—" },
+  { id: "CH002", name: "Telegram", channelType: "TELEGRAM", status: "disconnected", inboundPath: "/api/public/webhook/telegram", sendEndpoint: "https://api.telegram.org/bot<TOKEN>/sendMessage", webhookUrl: "/api/public/webhook/telegram", maskedToken: "—" },
+  { id: "CH003", name: "Facebook Messenger", channelType: "MESSENGER", status: "disconnected", inboundPath: "/api/public/webhook/messenger", sendEndpoint: "https://graph.facebook.com/v20.0/me/messages", webhookUrl: "/api/public/webhook/messenger", maskedToken: "—" },
+  { id: "CH004", name: "Instagram DM", channelType: "INSTAGRAM", status: "disconnected", inboundPath: "/api/public/webhook/instagram", sendEndpoint: "https://graph.facebook.com/v20.0/me/messages", webhookUrl: "/api/public/webhook/instagram", maskedToken: "—" },
+  { id: "CH005", name: "WhatsApp Business", channelType: "WHATSAPP", status: "disconnected", inboundPath: "/api/public/webhook/whatsapp", sendEndpoint: "https://graph.facebook.com/v20.0/<PHONE_NUMBER_ID>/messages", webhookUrl: "/api/public/webhook/whatsapp", maskedToken: "—" },
+  { id: "CH006", name: "Website Live Chat", channelType: "WEB", status: "disconnected", inboundPath: "/api/public/webhook/web", sendEndpoint: "", webhookUrl: "/api/public/webhook/web", maskedToken: "—" },
+  { id: "CH007", name: "Custom Webhook", channelType: "CUSTOM", status: "disconnected", inboundPath: "/api/public/webhook/custom", sendEndpoint: "", webhookUrl: "/api/public/webhook/custom", maskedToken: "—" },
 ];
 
 export const webhookTestLogs: WebhookTestLog[] = [

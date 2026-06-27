@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import * as seed from "@/data/mockData";
 import type {
   Customer, CatalogItem, Conversation, Message, Booking, Inquiry,
@@ -105,7 +106,9 @@ interface AppState {
 
 const mask = (raw: string) => (raw.length <= 4 ? "••••" : `•••• ${raw.slice(-4)}`);
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
   customers: [...seed.customers],
   catalog: [...seed.catalog],
   conversations: [...seed.conversations],
@@ -442,9 +445,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateChatIntegration: (id, patch) => {
     const next: Partial<ChatIntegration> = { ...patch };
-    if ((patch as { rawToken?: string }).rawToken) {
-      next.maskedToken = mask((patch as { rawToken?: string }).rawToken!);
-      delete (next as { rawToken?: string }).rawToken;
+    const raw = (patch as { rawToken?: string }).rawToken;
+    if (raw) {
+      next.maskedToken = mask(raw);
+      next.rawToken = raw;
     }
     set((s) => ({ chatIntegrations: s.chatIntegrations.map((c) => (c.id === id ? { ...c, ...next } : c)) }));
     get().audit("update_chat_integration", id);
@@ -453,14 +457,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   addChatIntegration: (patch) => {
     const id = nid("CH");
     const raw = (patch as { rawToken?: string }).rawToken;
+    const channelType = (patch.channelType ?? "CUSTOM") as ChatIntegration["channelType"];
+    const inboundPath = patch.inboundPath ?? `/api/public/webhook/${channelType.toLowerCase()}`;
     set((s) => ({
       chatIntegrations: [
         {
           id,
           name: patch.name ?? "Custom Webhook",
+          channelType,
           status: patch.status ?? "disconnected",
-          webhookUrl: patch.webhookUrl ?? `https://api.example.com/webhook/${id}`,
-          maskedToken: raw ? mask(raw) : patch.maskedToken ?? "•••• ••••",
+          inboundPath,
+          sendEndpoint: patch.sendEndpoint ?? "",
+          webhookUrl: patch.webhookUrl ?? inboundPath,
+          maskedToken: raw ? mask(raw) : patch.maskedToken ?? "—",
+          rawToken: raw,
           lastSync: patch.lastSync,
           lastMessage: patch.lastMessage,
           error: patch.error,
@@ -479,9 +489,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateAIProvider: (id, patch) => {
     const next: Partial<AIProvider> = { ...patch };
-    if ((patch as { rawKey?: string }).rawKey) {
-      next.maskedKey = mask((patch as { rawKey?: string }).rawKey!);
-      delete (next as { rawKey?: string }).rawKey;
+    const raw = (patch as { rawKey?: string }).rawKey;
+    if (raw) {
+      next.maskedKey = mask(raw);
+      next.rawKey = raw;
     }
     set((s) => ({ aiProviders: s.aiProviders.map((p) => (p.id === id ? { ...p, ...next } : p)) }));
     get().audit("update_ai_provider", id);
@@ -495,10 +506,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         {
           id,
           name: patch.name ?? "Custom",
-          status: patch.status ?? "disabled",
-          model: patch.model ?? "default",
-          maskedKey: raw ? mask(raw) : patch.maskedKey ?? "•••• ••••",
-          role: patch.role ?? "manual",
+          providerLabel: patch.providerLabel ?? "Lovable AI / Google Gemini API",
+          status: patch.status ?? "active",
+          model: patch.model ?? "google/gemini-2.5-flash-lite",
+          systemPrompt: patch.systemPrompt ?? "",
+          maskedKey: raw ? mask(raw) : patch.maskedKey ?? "—",
+          rawKey: raw,
+          role: patch.role ?? "primary",
           costLimit: patch.costLimit ?? 1000,
           lastTested: patch.lastTested,
         },
@@ -591,7 +605,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     toast.success("ล้างข้อมูลทั้งหมดเรียบร้อย — เริ่มต้นจาก 0");
   },
-}));
+    }),
+    {
+      name: "app-os-settings-v1",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        aiProviders: state.aiProviders,
+        chatIntegrations: state.chatIntegrations,
+        notificationRules: state.notificationRules,
+        securitySettings: state.securitySettings,
+      }),
+    },
+  ),
+);
+
+
 
 
 

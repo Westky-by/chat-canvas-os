@@ -173,17 +173,38 @@ export interface AIProvider {
   status: "active" | "disabled";
   model: string;
   maskedKey: string;
+  /** Raw key kept ONLY in localStorage (zustand persist), sent server-side per request when provided. */
+  rawKey?: string;
+  systemPrompt?: string;
+  providerLabel?: string;
   role: "primary" | "fallback" | "manual";
   lastTested?: string;
   costLimit: number;
 }
 
+export type ChatChannelType =
+  | "LINE"
+  | "TELEGRAM"
+  | "WHATSAPP"
+  | "MESSENGER"
+  | "INSTAGRAM"
+  | "WEB"
+  | "CUSTOM";
+
 export interface ChatIntegration {
   id: ID;
   name: "LINE OA" | "Telegram" | "Facebook Messenger" | "Instagram DM" | "WhatsApp Business" | "Website Live Chat" | "Custom Webhook";
+  channelType: ChatChannelType;
   status: "connected" | "disconnected" | "error";
+  /** Path-only (e.g. /api/public/webhook/line). UI shows full origin + this path. */
+  inboundPath: string;
+  /** Outbound send endpoint (e.g. https://api.line.me/v2/bot/message/reply). */
+  sendEndpoint: string;
+  /** @deprecated kept for backwards compat with older entries; same as inboundPath when absent. */
   webhookUrl: string;
   maskedToken: string;
+  /** Raw token kept ONLY in localStorage on the user's machine. */
+  rawToken?: string;
   lastSync?: string;
   lastMessage?: string;
   error?: string;
