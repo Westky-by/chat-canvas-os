@@ -32,8 +32,8 @@ export function Header() {
           className="bg-background border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs w-64 focus:outline-none focus:border-primary"
         />
       </div>
-      <button onClick={handleReset} className="p-2 hover:bg-surface-hover rounded-lg text-muted-foreground" title="รีเซ็ตข้อมูลทั้งหมดเป็นค่าเริ่มต้น"><RotateCcw className="w-4 h-4" /></button>
       <button className="p-2 hover:bg-surface-hover rounded-lg text-muted-foreground"><HelpCircle className="w-4 h-4" /></button>
+
       <button className="p-2 hover:bg-surface-hover rounded-lg text-muted-foreground relative">
         <Bell className="w-4 h-4" />
         <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
