@@ -103,7 +103,20 @@ interface AppState {
   deleteNotificationRule: (id: string) => void;
   resetAll: () => void;
 
+  // Catalog CRUD
+  addCatalogItem: (item: Partial<CatalogItem>) => void;
+  updateCatalogItem: (id: string, patch: Partial<CatalogItem>) => void;
+  deleteCatalogItem: (id: string) => void;
+
+  // Product CRUD
+  addProduct: (p: Partial<Product>) => void;
+  updateProduct: (id: string, patch: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
+
+  // Customer note
+  updateCustomerNote: (id: string, note: string) => void;
 }
+
 
 const mask = (raw: string) => (raw.length <= 4 ? "••••" : `•••• ${raw.slice(-4)}`);
 
