@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { PageContainer } from "@/components/layout/PageContainer";
+import { useMemo, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ActionButton } from "@/components/common/ActionButton";
 import { RelativeTime } from "@/components/common/RelativeTime";
-import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2 } from "lucide-react";
+import { Send, Bot, User, Image as ImgIcon, Sparkles, Heart, Link2, Filter, X } from "lucide-react";
+
+const ALL_CHANNELS = ["LINE", "Telegram", "Facebook Messenger", "Instagram", "WhatsApp", "Web Chat"] as const;
 
 export function UnifiedInboxPage() {
   const conversations = useAppStore((s) => s.conversations);
@@ -17,6 +18,16 @@ export function UnifiedInboxPage() {
 
   const [activeId, setActiveId] = useState(conversations[0]?.id ?? "");
   const [text, setText] = useState("");
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const filteredConvs = useMemo(
+    () => (selectedChannels.length === 0 ? conversations : conversations.filter((c) => selectedChannels.includes(c.channel))),
+    [conversations, selectedChannels],
+  );
+
+  const toggleChannel = (ch: string) =>
+    setSelectedChannels((s) => (s.includes(ch) ? s.filter((x) => x !== ch) : [...s, ch]));
   const activeConv = conversations.find((c) => c.id === activeId);
   const activeCust = customers.find((c) => c.id === activeConv?.customerId);
   const thread = messages.filter((m) => m.conversationId === activeId);
