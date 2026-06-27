@@ -71,6 +71,7 @@ interface AppState {
   setPrimaryAI: (id: string) => void;
   testChatWebhook: (id: string) => void;
   toggleChannelConnection: (id: string) => void;
+  setConversationMode: (id: string, mode: "ai" | "admin") => void;
   sendWebhookEvent: (event: string, payload: string) => void;
   testOwnerNotification: (ruleId: string) => void;
   toggleRule: (ruleId: string) => void;
