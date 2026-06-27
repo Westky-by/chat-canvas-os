@@ -616,9 +616,7 @@ export const useAppStore = create<AppState>()(
     },
   ),
 );
-    toast.success("ล้างข้อมูลทั้งหมดเรียบร้อย — เริ่มต้นจาก 0");
-  },
-}));
+
 
 
 
