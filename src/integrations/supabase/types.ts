@@ -14,6 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_integrations: {
+        Row: {
+          channel_type: string
+          created_at: string
+          extra: Json
+          id: string
+          inbound_path: string
+          last_error: string | null
+          last_sync: string | null
+          name: string
+          raw_token: string | null
+          send_endpoint: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel_type: string
+          created_at?: string
+          extra?: Json
+          id?: string
+          inbound_path: string
+          last_error?: string | null
+          last_sync?: string | null
+          name: string
+          raw_token?: string | null
+          send_endpoint?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel_type?: string
+          created_at?: string
+          extra?: Json
+          id?: string
+          inbound_path?: string
+          last_error?: string | null
+          last_sync?: string | null
+          name?: string
+          raw_token?: string | null
+          send_endpoint?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_notes: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          channel: string
+          created_at: string
+          email: string | null
+          external_id: string | null
+          id: string
+          last_activity: string
+          name: string
+          note: string | null
+          phone: string | null
+          tags: string[]
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          email?: string | null
+          external_id?: string | null
+          id?: string
+          last_activity?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          tags?: string[]
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          email?: string | null
+          external_id?: string | null
+          id?: string
+          last_activity?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          tags?: string[]
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inbox_messages: {
         Row: {
           channel: string
@@ -47,15 +169,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -182,6 +331,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "admin", "member"],
+    },
   },
 } as const
