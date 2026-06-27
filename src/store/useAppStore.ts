@@ -545,17 +545,31 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   resetAll: () => {
-    // ล้างเฉพาะส่วน Setup & Onboarding / Integrations / Admin → 0
-    // ส่วน Main / AI Operations / Sales / Campaigns / Logs คงข้อมูลตัวอย่างไว้
+    // ล้างทุกอย่างเป็น 0 / ว่างทั้งหมด — ไม่มี mock data ค้าง
     set((s) => ({
       ...s,
-      // Setup & Onboarding (integrations, providers, notification rules)
+      // Main / CRM / Inbox
+      customers: [],
+      catalog: [],
+      conversations: [],
+      messages: [],
+      bookings: [],
+      inquiries: [],
+      customerPreferences: [],
+      uploadedKnowledgeFiles: [],
+      aiFeedback: [],
+      campaigns: [],
+      products: [],
+      orders: [],
+      paymentSlips: [],
+      routes: [],
+      // Integrations
       aiProviders: [],
       chatIntegrations: [],
       webhookTestLogs: [],
       notificationRules: [],
       ownerNotificationLogs: [],
-      // Admin & Security (roles, users, security settings, backup)
+      // Admin & Security
       roles: [],
       users: [],
       backupJobs: [],
@@ -569,10 +583,16 @@ export const useAppStore = create<AppState>((set, get) => ({
         disableInactive: false,
         webhookSignatureValidation: false,
       },
+      // Logs
+      auditLogs: [],
+      usageLogs: [],
+      errorLogs: [],
+      copilotMessages: [],
     }));
-    toast.success("ล้างค่า Setup & Onboarding เป็น 0 แล้ว — ข้อมูลตัวอย่าง Main ยังคงไว้");
+    toast.success("ล้างข้อมูลทั้งหมดเรียบร้อย — เริ่มต้นจาก 0");
   },
 }));
+
 
 
 
