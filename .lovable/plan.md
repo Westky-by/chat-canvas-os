@@ -1,137 +1,89 @@
-# Omnichannel AI Business OS — Phase 1 MVP
+# แผนเปลี่ยน Mock → Production จริง ทั้งระบบ
 
-Convert the attached HTML prototype into a TanStack Start + TypeScript + Tailwind app with mock data and mock actions only. No real backend integrations.
+ปัจจุบัน "ใช้งานจริง" แล้ว: LINE webhook (รับ + AI ตอบ), Unified Inbox อ่าน DB จริง, AI Providers ผ่าน Lovable AI Gateway, Owner Auth. ที่เหลือเป็น zustand seed ใน `mockData.ts` — แผนนี้ย้ายเป็น Supabase + CRUD + Realtime ตามลำดับที่คุณเลือก โดยคง demo ไว้สำหรับบัญชีที่ไม่ใช่ owner.
 
-## Scope
+## หลักการ
+- ทุกตารางใหม่ใน `public.*` มี RLS + GRANT ครบ, owner เห็น+แก้ทุก row ผ่าน `has_role('owner')`
+- ทุกหน้าเปลี่ยนจาก `useAppStore` → TanStack Query + `createServerFn`/Supabase client; เก็บ `mockData.ts` ไว้ fallback ตอน DB ว่าง
+- ทุก webhook ใน `src/routes/api/public/webhook.$channel.ts` เพิ่ม signature verify + reply จริง โหลด token จาก secrets (เหมือนที่ LINE ทำแล้ว)
 
-- 28 pages from the prototype, all reachable from a grouped sidebar
-- Dark slate enterprise theme, teal accent, Thai-first UI (Inter + Sarabun fonts)
-- Reusable layout + common components, floating AI Copilot drawer, toast notifications (sonner)
-- All mock data centralized in `src/data/mockData.ts`, typed in `src/types/index.ts`
-- All mock interactions in `src/services/mockActions.ts` mutating an in-memory store (zustand) so actions reflect across pages
-- Placeholder service files for future Supabase / Gemini gateway / LINE / Telegram / Meta / WhatsApp / route / payment / storage / audit integrations — comments only, no secrets, no real calls
+---
 
-## Routing (TanStack Start)
+## Phase 1 — Customers / CRM / Notes  *(เริ่มก่อน)*
+**DB**
+- `customers` (name, channel, external_id, phone, email, tier, tags[], note, last_activity, owner_user_id)
+- `customer_notes` (customer_id, body, created_by, created_at)
+- เปิด Realtime + auto-create จาก webhook (LINE/TG/Meta) เมื่อเจอ external_user_id ใหม่
 
-The template uses TanStack Start, so the requested `pages/` directory becomes file-based routes under `src/routes/` (one file per page, dot-separated). A single `_app.tsx` layout route wraps all pages with `AppLayout` (sidebar + header + copilot). Route slugs follow the sidebar:
+**UI**
+- `CRMPage` ดึงจาก `customers` + แก้ tag/tier/note inline
+- Unified Inbox อ้าง `customers` แทน mock — กดบทสนทนา → จับคู่ค้นโดย channel+external_id
+- ปุ่ม "Open Chat" จาก CRM พา `?customer=<uuid>` ไป `/inbox`
 
-```
-/                         Dashboard
-/inbox                    Unified Inbox
-/crm                      CRM
-/setup/workspace          Workspace Setup
-/setup/invite             Invite Team Member
-/setup/login-preview      Login Portal Preview
-/ai/inquiries             AI Inquiry Inbox
-/ai/visual-catalog        Visual Catalog
-/ai/knowledge-files       File & Image Knowledge
-/ai/training              AI Training Center
-/ai/feedback              AI Feedback & Corrections
-/ai/preferences           Customer Preferences
-/sales/bookings           Booking Manager
-/sales/products           Product & Stock
-/sales/orders             Orders & Payments
-/sales/slips              Payment Slip Review
-/campaigns                Campaign Automation
-/route-planner            AI Route Planner
-/integrations/ai          AI API Providers
-/integrations/chat        Chat API Integrations
-/integrations/webhook     Webhook Tester
-/integrations/notifications  Owner Notifications
-/admin/secrets            Settings & Secrets Vault
-/admin/roles              Role & Permission Management
-/admin/security           Security Settings
-/admin/backup             Backup & Export
-/logs/audit               Audit Logs
-/logs/usage               Usage Logs
-/logs/errors              Error Logs
-```
+## Phase 2 — Bookings / Orders / Payment Slips
+**DB**
+- `bookings`, `orders`, `order_items`, `payment_slips` (พร้อม FK → customers)
+- Storage bucket `payment-slips` (private, signed URL)
 
-## File structure
+**UI/Logic**
+- BookingManager / Orders / SlipReview ใช้ Supabase + RLS
+- Action buttons (Confirm/Reschedule/Cancel/Approve slip) เรียก `createServerFn`
+- AI ในแชทเรียก server fn `createBookingFromConversation` ได้จริง (tool call)
 
-```
-src/
-  routes/
-    __root.tsx                (already exists — keep shell)
-    _app.tsx                  (AppLayout wrapper with Outlet)
-    _app.index.tsx            (Dashboard)
-    _app.inbox.tsx
-    _app.crm.tsx
-    _app.setup.workspace.tsx
-    _app.setup.invite.tsx
-    _app.setup.login-preview.tsx
-    _app.ai.inquiries.tsx
-    _app.ai.visual-catalog.tsx
-    _app.ai.knowledge-files.tsx
-    _app.ai.training.tsx
-    _app.ai.feedback.tsx
-    _app.ai.preferences.tsx
-    _app.sales.bookings.tsx
-    _app.sales.products.tsx
-    _app.sales.orders.tsx
-    _app.sales.slips.tsx
-    _app.campaigns.tsx
-    _app.route-planner.tsx
-    _app.integrations.ai.tsx
-    _app.integrations.chat.tsx
-    _app.integrations.webhook.tsx
-    _app.integrations.notifications.tsx
-    _app.admin.secrets.tsx
-    _app.admin.roles.tsx
-    _app.admin.security.tsx
-    _app.admin.backup.tsx
-    _app.logs.audit.tsx
-    _app.logs.usage.tsx
-    _app.logs.errors.tsx
-  components/
-    layout/        AppLayout, Sidebar, Header, PageContainer
-    common/        StatusBadge, DataTable, Modal, Drawer, MetricCard,
-                   ProviderCard, IntegrationCard, ActionButton
-    copilot/       AICopilotDrawer + floating trigger
-    pages/         28 page components (DashboardPage.tsx, etc.) — routes are thin
-                   wrappers that render these so the requested file list exists
-  data/mockData.ts
-  types/index.ts
-  services/
-    mockActions.ts, aiGateway.ts, supabaseClient.ts, lineService.ts,
-    telegramService.ts, metaService.ts, whatsappService.ts, routeService.ts,
-    paymentService.ts, storageService.ts, auditService.ts
-  store/useAppStore.ts       (zustand — holds mock arrays so mutations propagate)
-  utils/formatters.ts, permissions.ts, constants.ts
-  styles.css                 (extend with Sarabun font, teal tokens)
-```
+## Phase 3 — Catalog / Products / Stock
+**DB**
+- `catalog_items`, `products` + Storage bucket `catalog-images` (public read)
+- `product_stock_logs` สำหรับ audit
 
-## Design system
+**UI**
+- Visual Catalog & Product upload ภาพจริงเข้า Storage (แทน base64 ใน localStorage)
+- AI ดึง catalog ตาม `cf_keyword` มาแนบในแชทอัตโนมัติ
 
-- Update `src/styles.css`: load Inter + Sarabun via a `<link>` in `__root.tsx` head; override semantic tokens to dark slate (`--background: slate-950`, cards `slate-900`, borders `slate-800`); add teal primary (`oklch` of `#14b8a6`). Status colors mapped to chart tokens for badges (success / warning / danger / info / muted).
-- `StatusBadge`, `MetricCard`, `DataTable`, etc. all consume tokens — no hardcoded hex in components.
+## Phase 4 — AI Knowledge / Feedback / Campaigns / Logs
+**DB**
+- `knowledge_files` + bucket `ai-knowledge`
+- `ai_feedback`, `campaigns`, `audit_logs`, `usage_logs`, `error_logs`, `owner_notifications`
+- ทุก server fn เขียน `audit_logs`/`usage_logs` จริง; webhook ที่ error เขียน `error_logs`
 
-## Mock state & actions
+**UI**
+- หน้า Logs อ่าน DB จริง + filter/date range/CSV export จาก server fn
+- Campaign "Broadcast" ส่งผ่าน LINE/TG จริง (batch with rate limit)
 
-- `useAppStore` (zustand) seeds from `mockData.ts` and exposes the full action list from the brief (notifyOwner, createBookingFromInquiry, approvePaymentSlip, sendWebhookEvent, etc.).
-- Every action: updates store, appends an entry to `auditLogs` / `usageLogs` / `ownerNotificationLogs` where relevant, fires a sonner toast in Thai.
-- `mockActions.ts` re-exports thin wrappers around the store so pages stay framework-agnostic.
+---
 
-## AI Copilot
+## Channels เพิ่มเติม (ขนานกับเฟส)
 
-Floating teal button bottom-right inside `AppLayout`; opens a right-side `Drawer` with chat transcript, text input, mock image attach, "Add to Visual Catalog" simulation, "Link with Telegram" mock button. Adding a catalog item from Copilot calls `addCatalogItemFromCopilot` so the Visual Catalog page reflects it.
+### Telegram
+- เพิ่ม connector Telegram (ใช้ Lovable Connector Gateway → ไม่ต้องเก็บ bot token เอง)
+- Webhook `/api/public/webhook/telegram` verify `X-Telegram-Bot-Api-Secret-Token`
+- Reply ผ่าน `connector-gateway.lovable.dev/telegram/sendMessage`
 
-## Integration placeholders
+### Messenger / Instagram (Meta)
+- ใช้ Page Access Token ที่ผู้ใช้กรอกในหน้า Chat Integrations (เก็บใน DB ตาราง `chat_integrations` แทน localStorage)
+- Webhook verify `X-Hub-Signature-256` ด้วย App Secret
+- Reply ผ่าน `graph.facebook.com/v20.0/me/messages`
 
-Each service file exports stub functions returning `Promise.reject(new Error("not implemented"))` or mock data, with a top-of-file comment:
-`// Production integration will be implemented in a later phase. Do not place secrets in frontend.`
+### WhatsApp Cloud API
+- เก็บ Permanent Token + Phone Number ID ใน `chat_integrations`
+- Webhook verify hub signature + verify_token challenge (GET)
+- Reply ผ่าน `graph.facebook.com/v20.0/<PHONE_NUMBER_ID>/messages`
 
-No real fetch calls to Gemini / LINE / Telegram / Meta / WhatsApp / payments / routing. `supabaseClient.ts` exports a `null` placeholder with a TODO comment (the integration-managed Supabase files already in the template are left untouched but not used for app data in Phase 1).
+> Token ทุกช่องย้ายจาก `localStorage` (zustand persist) → ตาราง `chat_integrations` ใน DB เพื่อให้ server-side webhook อ่านได้จริง (ไม่งั้น webhook ไม่เห็น token เหมือนเคสที่เกิดกับ LINE ก่อนหน้า)
 
-## Out of scope (Phase 2+)
+---
 
-Real Supabase tables, edge functions, AI gateway, channel webhooks, payment provider, routing API, NAS backup wiring, auth.
+## Secrets ที่ต้องเพิ่ม
+- `TELEGRAM_API_KEY` (ผ่าน connector — ผมจะเรียก standard_connectors--connect ให้)
+- `META_APP_SECRET` (สำหรับ verify webhook signature ของ Messenger/IG/WhatsApp)
+- `META_WEBHOOK_VERIFY_TOKEN` (สำหรับ GET challenge — generate ให้)
+- WhatsApp/Meta Page tokens กรอกจาก UI Chat Integrations ลง DB
 
-## Acceptance
+---
 
-- App builds and runs, every sidebar link routes to its page
-- All 28 pages render with mock data from the central store
-- Major buttons mutate the store and show toasts
-- Copilot drawer opens, accepts input, can add a catalog item
-- No real API keys, no real external API calls from the frontend
-- Dark slate / teal visual identity matches the prototype, Thai labels preserved
+## ขนาดงาน & ลำดับส่ง
+- **เทิร์นนี้:** เริ่ม Phase 1 (Customers + CRM + Notes) + ย้าย `chat_integrations` ไป DB — เป็นพื้นฐานที่อีก 3 เฟสและ 3 channel ต้องอ้าง
+- **เทิร์นถัดไป:** Phase 2, แล้ว 3, แล้ว 4 ตามลำดับ
+- **ขนานกัน:** Telegram (เร็วสุด) → Meta → WhatsApp
+- หลังจบแต่ละเฟสจะให้คุณกด Publish เพื่อให้ webhook + DB ขึ้น production
+
+ขอ approve แผนนี้แล้วผมจะเริ่ม Phase 1 + ย้าย chat_integrations ทันทีครับ.
