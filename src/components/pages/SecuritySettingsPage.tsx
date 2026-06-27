@@ -1,7 +1,11 @@
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ActionButton } from "@/components/common/ActionButton";
 import { useAppStore } from "@/store/useAppStore";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { RotateCcw, ShieldAlert } from "lucide-react";
+
+const OWNER_EMAIL = "wesaa521@gmail.com";
 
 const Toggle = ({ label, hint, value, onChange }: { label: string; hint: string; value: boolean; onChange: (v: boolean) => void }) => (
   <div className="flex items-start justify-between gap-3 p-3 bg-background rounded-lg border border-border">
@@ -18,6 +22,20 @@ const Toggle = ({ label, hint, value, onChange }: { label: string; hint: string;
 export function SecuritySettingsPage() {
   const s = useAppStore((st) => st.securitySettings);
   const save = useAppStore((st) => st.saveSecuritySettings);
+  const resetAll = useAppStore((st) => st.resetAll);
+  const { user } = useAuth();
+  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL;
+
+  function handleReset() {
+    if (!isOwner) {
+      toast.error("เฉพาะ Owner เท่านั้นที่มีสิทธิ์รีเซ็ตข้อมูล");
+      return;
+    }
+    if (confirm("ต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น (Default)?\nการแก้ไข/เพิ่ม/ลบทั้งหมดในเซสชันนี้จะหายไป")) {
+      resetAll();
+    }
+  }
+
 
   return (
     <PageContainer
