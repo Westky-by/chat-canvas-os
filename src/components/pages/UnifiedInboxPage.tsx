@@ -19,6 +19,8 @@ type InboxRow = {
   text: string;
   received_at: string;
   created_at?: string;
+  sender?: string;
+  delivery_status?: string;
 };
 
 const toChannel = (raw: string): Channel => {
@@ -59,7 +61,7 @@ export function UnifiedInboxPage() {
     const loadInbox = async () => {
       const { data, error } = await supabase
         .from("inbox_messages")
-        .select("id, channel, external_user_id, user_name, text, received_at, created_at")
+      .select("id, channel, external_user_id, user_name, text, received_at, created_at, sender, delivery_status")
         .order("received_at", { ascending: false })
         .limit(300);
 
@@ -109,6 +111,7 @@ export function UnifiedInboxPage() {
       const conversationId = `conversation:${key}`;
       const displayName = row.user_name?.trim() || `${channel} ${shortExternalId(row.external_user_id)}`;
       const existing = grouped.get(key);
+      const sender = row.sender === "ai" || row.sender === "admin" || row.sender === "system" ? row.sender : "customer";
 
       if (!existing) {
         grouped.set(key, {
@@ -142,7 +145,7 @@ export function UnifiedInboxPage() {
       bucket.messages.push({
         id: `live-message:${row.id}`,
         conversationId,
-        sender: "customer",
+        sender: sender === "system" ? "admin" : sender,
         text: row.text || "(ไม่มีข้อความ)",
         at,
       });
@@ -159,12 +162,9 @@ export function UnifiedInboxPage() {
     };
   }, [liveRows, liveModes]);
 
-  const customers = useMemo(() => [...liveInbox.customers, ...storedCustomers], [liveInbox.customers, storedCustomers]);
-  const conversations = useMemo(
-    () => [...liveInbox.conversations, ...storedConversations],
-    [liveInbox.conversations, storedConversations],
-  );
-  const messages = useMemo(() => [...storedMessages, ...liveInbox.messages], [storedMessages, liveInbox.messages]);
+  const customers = liveInbox.customers;
+  const conversations = liveInbox.conversations;
+  const messages = liveInbox.messages;
 
   // Auto-select conversation from ?customer=ID (e.g. navigated from CRM)
   useEffect(() => {
