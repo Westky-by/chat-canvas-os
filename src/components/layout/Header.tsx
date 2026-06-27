@@ -23,7 +23,7 @@ export function Header() {
     <header className="h-14 border-b border-border bg-surface/60 backdrop-blur flex items-center px-5 gap-4 flex-shrink-0">
       <div className="flex-1">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        <p className="text-[11px] text-muted-foreground">โหมดทดสอบ Mock Data • ไม่มีการเรียก API จริง</p>
+        <p className="text-[11px] text-muted-foreground">พร้อมใช้งานจริง • กรุณาตั้งค่า API Key ของคุณเองใน Integrations</p>
       </div>
       <div className="relative max-w-xs hidden md:block">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
